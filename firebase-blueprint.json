@@ -1,0 +1,91 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and authentication data.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phoneNumber": { "type": "string" },
+        "address": { "type": "string" },
+        "role": { "type": "string", "enum": ["citizen", "driver", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "role"]
+    },
+    "Vehicle": {
+      "title": "Waste Collection Vehicle",
+      "description": "Real-time position and status of waste collection vehicles.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "driverId": { "type": "string" },
+        "location": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" }
+          }
+        },
+        "status": { "type": "string", "enum": ["idle", "active", "completed"] },
+        "lastUpdate": { "type": "string", "format": "date-time" },
+        "vehicleNumber": { "type": "string" }
+      },
+      "required": ["id", "location", "status"]
+    },
+    "BlackspotReport": {
+      "title": "Blackspot Report",
+      "description": "Citizen reported garbage issues.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "reporterId": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "description": { "type": "string" },
+        "location": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" }
+          }
+        },
+        "status": { "type": "string", "enum": ["pending", "investigating", "resolved"] },
+        "severity": { "type": "string", "enum": ["low", "medium", "high"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "resolvedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "reporterId", "location", "status"]
+    },
+    "Schedule": {
+      "title": "Collection Schedule",
+      "description": "Weekly waste collection routines.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "dayOfWeek": { "type": "string" },
+        "route": { "type": "string" },
+        "expectedTime": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "User profiles managed by UID."
+    },
+    "vehicles/{vehicleId}": {
+      "schema": "Vehicle",
+      "description": "Tracking logs for vehicles."
+    },
+    "reports/{reportId}": {
+      "schema": "BlackspotReport",
+      "description": "Collection of community reports."
+    },
+    "schedules/{scheduleId}": {
+      "schema": "Schedule",
+      "description": "Weekly schedules."
+    }
+  }
+}

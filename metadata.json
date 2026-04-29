@@ -1,0 +1,6 @@
+{
+  "name": "Grama-Waste Tracker",
+  "description": "A smart village waste management system featuring real-time vehicle tracking, issue reporting, and AI-powered waste classification.",
+  "requestFramePermissions": ["camera", "geolocation"],
+  "majorCapabilities": ["Real-time Tracking", "AI Waste Analysis", "Community Reporting"]
+}
