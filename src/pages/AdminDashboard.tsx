@@ -41,7 +41,7 @@ const AdminDashboard: React.FC = () => {
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: `Provide a high-level, executive summary for the Village Panchayat based on these reports:\n${reportStatus}. 
-        Format: 2 sentences. Focused on status, primary waste issues, and recommendation for vehicle deployment.`,
+        Format: 2 sentences max. Focused on status, primary waste issues, and recommendation for vehicle deployment.`,
       });
       setAiSummary(response.text || 'No summary available.');
     } catch (err) {

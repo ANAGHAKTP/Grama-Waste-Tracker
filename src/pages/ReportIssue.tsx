@@ -42,28 +42,30 @@ const ReportIssue: React.FC = () => {
 
       const base64Data = await base64Promise;
 
+      const imagePart = {
+        inlineData: {
+          data: base64Data,
+          mimeType: file.type
+        }
+      };
+
+      const textPart = {
+        text: `Analyze this image of a waste/garbage issue. 
+                      Classify the waste type and suggest prioritized actions.
+                      Return JSON: { "type": "...", "action": "...", "severity": "low" | "medium" | "high" }`
+      };
+
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: {
-          parts: [
-            { text: `Analyze this image of a waste/garbage issue. 
-                      Classify the waste type and suggest prioritized actions.
-                      Return JSON: { "type": "...", "action": "...", "severity": "low" | "medium" | "high" }` },
-            {
-              inlineData: {
-                data: base64Data,
-                mimeType: file.type
-              }
-            }
-          ]
-        },
+        contents: { parts: [imagePart, textPart] },
         config: { responseMimeType: "application/json" }
       });
 
       const res = JSON.parse(response.text || '{}');
-      setAiAnalysis(`Type: ${res.type} | Action: ${res.action} | Priority: ${res.severity.toUpperCase()}`);
+      setAiAnalysis(`Type: ${res.type} | Action: ${res.action} | Priority: ${(res.severity || 'medium').toUpperCase()}`);
     } catch (err) {
       console.error("AI Analysis failed", err);
+      setAiAnalysis("AI Analysis unavailable. Please provide a manual description.");
     } finally {
       setAnalyzing(false);
     }

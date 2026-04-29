@@ -26,6 +26,7 @@ const Dashboard: React.FC = () => {
         setDailyInsight(response.text || 'Keep your village clean, start composting today!');
       } catch (err) {
         console.error("Failed to fetch AI insight", err);
+        setDailyInsight('Keep your village clean, start composting today!');
       }
     };
     fetchInsight();
@@ -37,34 +38,36 @@ const Dashboard: React.FC = () => {
   };
 
   const QUICK_ACTIONS = [
-    { to: '/map', label: 'Live Tracking', icon: MapPin, color: 'text-indigo-600' },
-    { to: '/report', label: 'Report Issue', icon: AlertCircle, color: 'text-rose-600' },
-    { to: '/education', label: 'Waste Guide', icon: Info, color: 'text-violet-600' },
-    { to: '/', label: 'My Reports', icon: LayoutGrid, color: 'text-slate-600' },
+    { to: '/map', label: 'Live Tracking', icon: MapPin, color: 'text-accent-primary' },
+    { to: '/report', label: 'Report Issue', icon: AlertCircle, color: 'text-accent-error' },
+    { to: '/education', label: 'Waste Guide', icon: Info, color: 'text-accent-secondary' },
+    { to: '/', label: 'My Reports', icon: LayoutGrid, color: 'text-text-tertiary' },
   ];
 
   return (
-    <div className="pb-20 space-y-12">
+    <div className="pb-24 space-y-10">
       <header className="flex justify-between items-start border-b border-border-dim pb-8">
         <div>
-          <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-text-tertiary">Account Control</span>
-          <h1 className="text-[28px] leading-[35px] font-['Georgia',_serif] font-bold text-text-primary mt-2">{profile?.displayName?.split(' ')[0]}</h1>
+          <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-text-tertiary">Unit Identifier</span>
+          <h1 className="text-4xl font-display font-bold text-text-primary mt-2 tracking-tight">
+            {profile?.displayName?.split(' ')[0] || 'User'}
+          </h1>
           <p className="text-text-secondary text-sm mt-1 flex items-center gap-2">
-            <MapPin className="w-3 h-3" />
+            <MapPin className="w-3.5 h-3.5 text-accent-primary" />
             {profile?.address || 'Set your location'}
           </p>
         </div>
         <div className="flex gap-2">
           <button 
             onClick={toggleTheme}
-            className="p-3 border border-border-dim hover:bg-bg-tertiary transition-colors rounded-geometric"
+            className="p-3 border border-border-dim hover:bg-bg-tertiary transition-colors rounded-geometric shadow-sm"
             title="Toggle Theme"
           >
             {theme === 'light' ? <Moon className="w-5 h-5 text-text-tertiary" /> : <Sun className="w-5 h-5 text-text-tertiary" />}
           </button>
           <button 
             onClick={handleSignOut}
-            className="p-3 border border-border-dim hover:bg-bg-tertiary transition-colors rounded-geometric"
+            className="p-3 border border-border-dim hover:bg-bg-tertiary transition-colors rounded-geometric shadow-sm"
             title="Sign Out"
           >
             <LogOut className="w-5 h-5 text-text-tertiary" />
@@ -75,42 +78,45 @@ const Dashboard: React.FC = () => {
       {/* AI Daily Insight */}
       {dailyInsight && (
         <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-bg-secondary border border-accent-primary/20 p-4 flex gap-4 items-start"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="bg-bg-secondary border border-accent-primary/20 p-5 flex gap-4 items-start shadow-sm"
           style={{ borderRadius: 'var(--radius-geometric)' }}
         >
-          <div className="bg-accent-primary p-2 text-white shrink-0">
-            <Sparkles className="w-4 h-4" />
+          <div className="bg-accent-primary/10 p-2.5 text-accent-primary rounded-lg shrink-0">
+            <Sparkles className="w-5 h-5" />
           </div>
-          <div className="space-y-1">
-            <h4 className="text-[10px] font-bold text-accent-primary uppercase tracking-widest">Village Insight</h4>
-            <p className="text-xs text-text-primary font-medium leading-relaxed italic">"{dailyInsight}"</p>
+          <div className="space-y-1.5">
+            <h4 className="text-[10px] font-bold text-accent-primary uppercase tracking-widest leading-none">Panchayat Intelligence</h4>
+            <p className="text-sm text-text-primary font-medium leading-relaxed italic">"{dailyInsight}"</p>
           </div>
         </motion.div>
       )}
 
-      {/* Arrival Alert Card - Geometric Balance Style */}
+      {/* Arrival Alert Card - Material 3 Style */}
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="geometric-card bg-bg-tertiary text-white border-none shadow-2xl shadow-black/40"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="geometric-card bg-accent-primary text-white border-none shadow-xl shadow-accent-primary/20 p-7 overflow-hidden relative"
       >
-        <div className="flex items-center justify-between">
+        <div className="relative z-10 flex items-center justify-between">
           <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 px-2 py-1 bg-white/5 rounded-sm">
-              <Clock className="w-3 h-3 text-accent-tertiary" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-accent-tertiary">Vehicle Approaching</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-full">
+              <Clock className="w-3.5 h-3.5 text-white" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">In Transit</span>
             </div>
             <div>
-              <h2 className="text-3xl font-display font-medium tracking-tight">12 Minutes</h2>
-              <p className="text-text-secondary text-sm mt-1 font-mono uppercase tracking-tighter">Market Road • Sector 04</p>
+              <h2 className="text-4xl font-display font-medium tracking-tight">12 Minutes</h2>
+              <p className="text-white/80 text-xs mt-1 font-mono uppercase tracking-widest">Market Road • Sector 04</p>
             </div>
           </div>
-          <div className="w-16 h-16 border border-white/20 flex items-center justify-center rotate-45">
-            <Navigation className="w-8 h-8 text-white -rotate-45" />
+          <div className="w-16 h-16 bg-white/10 flex items-center justify-center rounded-2xl">
+            <Navigation className="w-8 h-8 text-white" />
           </div>
         </div>
+        
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 -translate-y-1/2 translate-x-1/2 rounded-full blur-3xl" />
       </motion.div>
 
       {/* Quick Actions Grid */}
