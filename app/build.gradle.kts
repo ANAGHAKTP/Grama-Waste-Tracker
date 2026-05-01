@@ -100,8 +100,9 @@ dependencies {
     implementation(libs.camera.lifecycle)
     implementation(libs.camera.view)
 
-    // Core
+    // Core & Material
     implementation(libs.core.ktx)
+    implementation(libs.material)
     implementation(libs.coroutines.android)
     implementation(libs.coroutines.play)
 }
