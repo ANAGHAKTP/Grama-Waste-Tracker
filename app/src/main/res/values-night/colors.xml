@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark mode backgrounds -->
+    <color name="primary_bg">#FF0F1419</color>
+    <color name="secondary_bg">#FF1A2332</color>
+    <color name="tertiary_bg">#FF2A3A4D</color>
+
+    <!-- Accent Colors (same) -->
+    <color name="accent_primary">#FF7C3AED</color>
+    <color name="accent_secondary">#FFEC4899</color>
+    <color name="accent_tertiary">#FF10B981</color>
+    <color name="accent_error">#FFEF4444</color>
+
+    <!-- Text Colors -->
+    <color name="text_primary">#FFF5F7FA</color>
+    <color name="text_secondary">#FFA8B8CC</color>
+    <color name="text_tertiary">#FF7A8B9E</color>
+
+    <!-- Borders -->
+    <color name="border_color">#FF3A4A5D</color>
+</resources>

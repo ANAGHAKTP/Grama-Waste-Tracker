@@ -1,8 +1,38 @@
-node_modules/
+# Built application files
+*.apk
+*.aar
+*.ap_
+*.aab
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+out/
+
+# Gradle files
+.gradle/
 build/
-dist/
-coverage/
+app/build/
+
+# Local configuration file (sdk path, api keys)
+local.properties
+
+# Android Studio
+*.iml
+.idea/
 .DS_Store
-*.log
-.env*
-!.env.example
+
+# Node (legacy web app)
+node_modules/
+dist/
+.env.local
+.env
+
+# Firebase credentials
+google-services.json
