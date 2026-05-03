@@ -2,7 +2,7 @@ package com.grama.wastetracker.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.grama.wastetracker.data.model.BlackspotReport
+import com.grama.wastetracker.data.model.IncidentReport
 import com.grama.wastetracker.data.repository.GeminiRepository
 import com.grama.wastetracker.data.repository.LogisticsRepository
 import com.grama.wastetracker.data.repository.ReportRepository
@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class AdminState(
-    val reports: List<BlackspotReport> = emptyList(),
+    val reports: List<IncidentReport> = emptyList(),
     val activeVehicleCount: Int = 0,
     val loading: Boolean = true,
     val summarizing: Boolean = false,

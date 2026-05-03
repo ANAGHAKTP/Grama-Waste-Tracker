@@ -23,8 +23,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.draw.drawWithContent
 import coil3.compose.AsyncImage
-import com.grama.wastetracker.data.model.BlackspotReport
+import com.grama.wastetracker.data.model.IncidentReport
 import com.grama.wastetracker.ui.components.GeometricCard
 import com.grama.wastetracker.ui.components.SectionHeader
 import com.grama.wastetracker.ui.theme.*
@@ -36,7 +37,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun AdminDashboardScreen(viewModel: AdminViewModel = viewModel()) {
     val state by viewModel.state.collectAsState()
-    val pendingCount = state.reports.count { it.status == "pending" }
+    val pendingCount = state.reports.count { it.status == "PENDING" }
 
     Column(
         modifier = Modifier.fillMaxSize().background(GramaTheme.colors.bgPrimary)
@@ -154,46 +155,101 @@ fun AdminDashboardScreen(viewModel: AdminViewModel = viewModel()) {
         if (state.loading) {
             Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = GramaTheme.colors.textTertiary) }
         } else {
-            state.reports.forEach { report -> ReportCard(report = report, onResolve = { viewModel.resolveReport(report.id) }) }
+            state.reports.forEach { report -> ReportCard(report = report, onResolve = { viewModel.resolveReport(report.reportId) }) }
         }
     }
 }
 
 @Composable
-private fun ReportCard(report: BlackspotReport, onResolve: () -> Unit) {
-    val isResolved = report.status == "resolved"
-    GeometricCard(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Top) {
-            Surface(Modifier.size(80.dp), border = BorderStroke(1.dp, GramaTheme.colors.borderDim), color = GramaTheme.colors.bgPrimary, shape = RoundedCornerShape(4.dp)) {
-                AsyncImage(model = report.photoUrl, contentDescription = "Issue", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp)))
+fun ReportCard(
+    report: IncidentReport,
+    onResolve: () -> Unit
+) {
+    val isOffender = report.type == "offender"
+    
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp)
+            .then(
+                if (isOffender) Modifier.drawWithContent {
+                    drawContent()
+                    drawRect(
+                        color = AccentError,
+                        size = androidx.compose.ui.geometry.Size(4.dp.toPx(), size.height)
+                    )
+                } else Modifier
+            ),
+        color = GramaTheme.colors.bgSecondary,
+        shape = RoundedCornerShape(12.dp),
+        border = if (isOffender)
+            BorderStroke(1.dp, AccentError.copy(alpha = 0.3f))
+        else
+            BorderStroke(1.dp, GramaTheme.colors.borderDim)
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Type badge
+                Surface(
+                    color = if (isOffender) AccentError.copy(alpha = 0.1f)
+                            else AccentPrimary.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Text(
+                        text = if (isOffender) "OFFENDER" else report.issueType.uppercase(),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp),
+                        color = if (isOffender) AccentError else AccentPrimary
+                    )
+                }
+                
+                // Timestamp
+                Text(
+                    text = report.timestamp.take(10), // show date portion only
+                    style = MaterialTheme.typography.labelSmall,
+                    color = GramaTheme.colors.textTertiary
+                )
             }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
-                    Surface(color = if (isResolved) AccentTertiary.copy(0.1f) else AccentError.copy(0.1f), border = BorderStroke(1.dp, if (isResolved) AccentTertiary.copy(0.2f) else AccentError.copy(0.2f)), shape = RoundedCornerShape(2.dp)) {
-                        Text(report.status.uppercase(), Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, letterSpacing = 1.sp), color = if (isResolved) AccentTertiary else AccentError)
-                    }
-                    Text(formatTimestamp(report.createdAt), style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontSize = 8.sp), color = GramaTheme.colors.textTertiary)
-                }
-                Text(report.description.ifEmpty { "Null Description" }, style = MaterialTheme.typography.titleMedium, color = GramaTheme.colors.textPrimary, maxLines = 2)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.LocationOn, null, tint = GramaTheme.colors.textTertiary, modifier = Modifier.size(12.dp))
-                    Text("COORD: %.2f / %.2f".format(report.location.lat, report.location.lng), style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace), color = GramaTheme.colors.textTertiary)
-                }
+            
+            Text(
+                text = report.description.ifEmpty { "Null Description" },
+                style = MaterialTheme.typography.bodySmall,
+                color = GramaTheme.colors.textSecondary,
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
+            
+            // Photo thumbnail if present
+            report.photoUrl?.let { url ->
+                AsyncImage(
+                    model = url,
+                    contentDescription = "Report evidence",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                )
             }
-        }
-        if (!isResolved) {
-            Spacer(Modifier.height(16.dp))
-            HorizontalDivider(color = GramaTheme.colors.borderDim)
-            Spacer(Modifier.height(16.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = onResolve, Modifier.weight(1f).height(44.dp), colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary), shape = RoundedCornerShape(12.dp)) {
-                    Icon(Icons.Default.CheckCircle, null, Modifier.size(16.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("EXECUTE RESOLUTION", style = MaterialTheme.typography.labelLarge.copy(fontSize = 9.sp, letterSpacing = 2.sp))
-                }
-                Surface(Modifier.size(44.dp).clickable { }, border = BorderStroke(1.dp, GramaTheme.colors.borderDim), color = Color.Transparent, shape = RoundedCornerShape(12.dp)) {
-                    Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.OpenInNew, null, tint = GramaTheme.colors.textTertiary, modifier = Modifier.size(16.dp)) }
-                }
+            
+            // Resolve button
+            Button(
+                onClick = onResolve,
+                modifier = Modifier.fillMaxWidth().height(40.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isOffender) AccentError else AccentPrimary
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    "EXECUTE RESOLUTION",
+                    style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.sp)
+                )
             }
         }
     }

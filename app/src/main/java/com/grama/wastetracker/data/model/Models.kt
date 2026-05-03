@@ -93,22 +93,24 @@ enum class Severity(val value: String) {
 }
 
 /**
- * Citizen-reported garbage blackspot.
+ * Unified model for General and Offender reports.
  */
-data class BlackspotReport(
-    val id: String = "",
-    val reporterId: String = "",
-    val photoUrl: String = "",
+data class IncidentReport(
+    val reportId: String = "",
+    val type: String = "general",        // "general" | "offender"
+    val issueType: String = "",
     val description: String = "",
-    val location: LatLng = LatLng(),
-    val status: String = ReportStatus.PENDING.value,
-    val severity: String = Severity.MEDIUM.value,
-    val aiAnalysis: String? = null,
-    val createdAt: String = "",
-    val resolvedAt: String? = null
+    val photoUrl: String? = null,
+    val reporterUid: String = "",        // was: reporterId
+    val timestamp: String = "",          // was: createdAt
+    val status: String = "PENDING",
+    val location: LatLng? = null,
+    val aiAnalysis: String? = null
 ) {
+    // NOTE: Field names changed from BlackspotReport v1.
+    // Existing Firestore documents use createdAt/reporterId — reseed for demo.
+    
     val reportStatus: ReportStatus get() = ReportStatus.fromValue(status)
-    val severityLevel: Severity get() = Severity.fromValue(severity)
 }
 
 /**
@@ -137,3 +139,4 @@ data class WasteAnalysis(
     val action: String = "",
     val severity: String = "medium"
 )
+
