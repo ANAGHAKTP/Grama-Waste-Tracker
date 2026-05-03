@@ -154,6 +154,28 @@ fun DashboardScreen(
 
         HorizontalDivider(color = GramaTheme.colors.borderDim, thickness = 1.dp)
 
+        // ── Error Banner ──
+        AnimatedVisibility(visible = dashState.error != null) {
+            Surface(
+                modifier = Modifier.fillMaxWidth().clickable { dashboardViewModel.refresh() },
+                color = AccentError.copy(alpha = 0.1f),
+                border = BorderStroke(1.dp, AccentError.copy(alpha = 0.2f)),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Row(
+                    Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Icon(Icons.Default.CloudOff, null, tint = AccentError, modifier = Modifier.size(16.dp))
+                        Text(dashState.error ?: "", style = MaterialTheme.typography.bodySmall, color = AccentError)
+                    }
+                    Text("RETRY", style = MaterialTheme.typography.labelLarge.copy(fontSize = 10.sp, letterSpacing = 1.sp), color = AccentError)
+                }
+            }
+        }
+
         // ── AI Daily Insight ──
         AnimatedVisibility(
             visible = dashState.dailyInsight.isNotEmpty() && !dashState.insightLoading,
@@ -204,8 +226,9 @@ fun DashboardScreen(
         // ── Vehicle ETA Card ──
         Surface(
             shape = RoundedCornerShape(12.dp),
-            color = AccentPrimary,
-            shadowElevation = 12.dp,
+            color = if (dashState.activeVehicle != null) AccentPrimary else GramaTheme.colors.bgSecondary,
+            border = if (dashState.activeVehicle == null) BorderStroke(1.dp, GramaTheme.colors.borderDim) else null,
+            shadowElevation = if (dashState.activeVehicle != null) 12.dp else 0.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
             Box(modifier = Modifier.padding(24.dp)) {
@@ -217,7 +240,7 @@ fun DashboardScreen(
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Surface(
                             shape = RoundedCornerShape(50),
-                            color = Color.White.copy(alpha = 0.1f)
+                            color = (if (dashState.activeVehicle != null) Color.White else GramaTheme.colors.textTertiary).copy(alpha = 0.1f)
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -225,48 +248,48 @@ fun DashboardScreen(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Schedule,
+                                    imageVector = if (dashState.activeVehicle != null) Icons.Default.Schedule else Icons.Default.PauseCircle,
                                     contentDescription = null,
-                                    tint = Color.White,
+                                    tint = if (dashState.activeVehicle != null) Color.White else GramaTheme.colors.textTertiary,
                                     modifier = Modifier.size(14.dp)
                                 )
                                 Text(
-                                    text = "IN TRANSIT",
+                                    text = if (dashState.activeVehicle != null) "IN TRANSIT" else "IDLE",
                                     style = MaterialTheme.typography.labelLarge.copy(
                                         fontSize = 9.sp,
                                         letterSpacing = 2.sp,
                                     ),
-                                    color = Color.White
+                                    color = if (dashState.activeVehicle != null) Color.White else GramaTheme.colors.textTertiary
                                 )
                             }
                         }
                         Text(
-                            text = "12 Minutes",
+                            text = dashState.activeVehicle?.let { "${it.etaMinutes ?: "--"} Minutes" } ?: "No Active Unit",
                             style = MaterialTheme.typography.headlineLarge.copy(
                                 fontFamily = SpaceGroteskFamily,
                                 fontWeight = FontWeight.Medium
                             ),
-                            color = Color.White
+                            color = if (dashState.activeVehicle != null) Color.White else GramaTheme.colors.textPrimary
                         )
                         Text(
-                            text = "MARKET ROAD • SECTOR 04",
+                            text = dashState.activeVehicle?.let { "CURRENT SECTOR • ${it.id.take(8).uppercase()}" } ?: "Fleet currently stationed",
                             style = MaterialTheme.typography.labelMedium.copy(
                                 letterSpacing = 2.sp
                             ),
-                            color = Color.White.copy(alpha = 0.8f)
+                            color = (if (dashState.activeVehicle != null) Color.White else GramaTheme.colors.textTertiary).copy(alpha = 0.8f)
                         )
                     }
 
                     Surface(
                         shape = RoundedCornerShape(16.dp),
-                        color = Color.White.copy(alpha = 0.1f),
+                        color = (if (dashState.activeVehicle != null) Color.White else GramaTheme.colors.textTertiary).copy(alpha = 0.1f),
                         modifier = Modifier.size(64.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector = Icons.Default.Navigation,
+                                imageVector = if (dashState.activeVehicle != null) Icons.Default.Navigation else Icons.Default.LocalShipping,
                                 contentDescription = null,
-                                tint = Color.White,
+                                tint = if (dashState.activeVehicle != null) Color.White else GramaTheme.colors.textTertiary,
                                 modifier = Modifier.size(32.dp)
                             )
                         }
@@ -338,60 +361,63 @@ fun DashboardScreen(
         // ── Schedule List ──
         SectionHeader(title = "Logistics", trailingText = "Expand")
 
-        val scheduleItems = listOf(
-            Triple("MON", "Dry Waste", "08:00"),
-            Triple("WED", "Wet Waste", "07:30"),
-            Triple("FRI", "Recyclables", "09:00"),
-        )
-
         Column {
-            scheduleItems.forEachIndexed { index, (day, type, time) ->
-                if (index > 0) {
-                    HorizontalDivider(color = GramaTheme.colors.borderDim, thickness = 0.5.dp)
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { }
-                        .padding(vertical = 16.dp, horizontal = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            if (dashState.schedules.isEmpty()) {
+                Text(
+                    text = "No collection schedules found.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = GramaTheme.colors.textTertiary,
+                    modifier = Modifier.padding(vertical = 32.dp, horizontal = 8.dp)
+                )
+            } else {
+                dashState.schedules.forEachIndexed { index, schedule ->
+                    if (index > 0) {
+                        HorizontalDivider(color = GramaTheme.colors.borderDim, thickness = 0.5.dp)
+                    }
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(24.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { }
+                            .padding(vertical = 16.dp, horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = day,
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
-                            ),
-                            color = GramaTheme.colors.textTertiary,
-                            modifier = Modifier.width(32.dp)
-                        )
-                        Column {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(24.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Text(
-                                text = type,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = GramaTheme.colors.textPrimary
-                            )
-                            Text(
-                                text = "$time AM • COLLECTION",
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                text = schedule.dayOfWeek.take(3).uppercase(),
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
                                 ),
-                                color = GramaTheme.colors.textTertiary
+                                color = GramaTheme.colors.textTertiary,
+                                modifier = Modifier.width(32.dp)
                             )
+                            Column {
+                                Text(
+                                    text = schedule.route,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = GramaTheme.colors.textPrimary
+                                )
+                                Text(
+                                    text = "${schedule.expectedTime} • COLLECTION",
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                    ),
+                                    color = GramaTheme.colors.textTertiary
+                                )
+                            }
                         }
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(GramaTheme.colors.borderDim)
+                        )
                     }
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(GramaTheme.colors.borderDim)
-                    )
                 }
             }
         }

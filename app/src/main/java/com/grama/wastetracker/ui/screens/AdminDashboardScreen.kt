@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -49,14 +50,68 @@ fun AdminDashboardScreen(viewModel: AdminViewModel = viewModel()) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(Icons.Default.Shield, null, tint = AccentPrimary, modifier = Modifier.size(12.dp))
                     Text("PANCHAYAT INTERNAL", style = MaterialTheme.typography.labelLarge.copy(fontSize = 9.sp, letterSpacing = 2.sp), color = AccentPrimary)
+                    
+                    Spacer(Modifier.width(16.dp))
+                    Text(
+                        "SEED DATA",
+                        style = MaterialTheme.typography.labelLarge.copy(fontSize = 8.sp, letterSpacing = 1.sp),
+                        color = AccentPrimary.copy(alpha = 0.5f),
+                        modifier = Modifier.clickable { viewModel.seedData() }
+                    )
                 }
                 Spacer(Modifier.height(8.dp))
                 Text("Systems.Terminal", style = MaterialTheme.typography.displaySmall.copy(fontFamily = SpaceGroteskFamily, fontWeight = FontWeight.Bold), color = GramaTheme.colors.textPrimary)
             }
-            Surface(color = GramaTheme.colors.bgTertiary, shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, GramaTheme.colors.borderDim), shadowElevation = 8.dp) {
+            Surface(
+                color = GramaTheme.colors.bgTertiary,
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, GramaTheme.colors.borderDim),
+                shadowElevation = 8.dp
+            ) {
                 Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.End) {
-                    Text("ACTIVE UNITS", style = MaterialTheme.typography.labelLarge.copy(fontSize = 9.sp, letterSpacing = 2.sp), color = GramaTheme.colors.textTertiary)
-                    Text("0x04", style = MaterialTheme.typography.titleLarge.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold), color = GramaTheme.colors.textPrimary)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        // Pulsing Live Dot
+                        Box(
+                            Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(AccentError)
+                        )
+                        Text(
+                            "LIVE FEED",
+                            style = MaterialTheme.typography.labelLarge.copy(fontSize = 7.sp, letterSpacing = 1.sp),
+                            color = AccentError
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "ACTIVE UNITS",
+                        style = MaterialTheme.typography.labelLarge.copy(fontSize = 9.sp, letterSpacing = 2.sp),
+                        color = GramaTheme.colors.textTertiary
+                    )
+                    Text(
+                        "0x${state.activeVehicleCount.toString().padStart(2, '0')}",
+                        style = MaterialTheme.typography.titleLarge.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
+                        color = GramaTheme.colors.textPrimary
+                    )
+                }
+            }
+        }
+
+        // Error Banner
+        AnimatedVisibility(visible = state.error != null) {
+            Surface(
+                modifier = Modifier.fillMaxWidth().clickable { viewModel.refresh() },
+                color = AccentError.copy(alpha = 0.1f),
+                border = BorderStroke(1.dp, AccentError.copy(alpha = 0.2f)),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Icon(Icons.Default.Warning, null, tint = AccentError, modifier = Modifier.size(16.dp))
+                        Text(state.error ?: "", style = MaterialTheme.typography.bodySmall, color = AccentError)
+                    }
+                    Text("RECONNECT", style = MaterialTheme.typography.labelLarge.copy(fontSize = 10.sp, letterSpacing = 1.sp), color = AccentError)
                 }
             }
         }

@@ -4,14 +4,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.grama.wastetracker.data.model.BlackspotReport
 import com.grama.wastetracker.data.repository.GeminiRepository
+import com.grama.wastetracker.data.repository.LogisticsRepository
 import com.grama.wastetracker.data.repository.ReportRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class AdminState(
     val reports: List<BlackspotReport> = emptyList(),
+    val activeVehicleCount: Int = 0,
     val loading: Boolean = true,
     val summarizing: Boolean = false,
     val aiSummary: String = "",
@@ -20,6 +23,7 @@ data class AdminState(
 
 class AdminViewModel(
     private val reportRepo: ReportRepository = ReportRepository(),
+    private val logisticsRepo: LogisticsRepository = LogisticsRepository(),
     private val geminiRepo: GeminiRepository = GeminiRepository()
 ) : ViewModel() {
 
@@ -28,6 +32,38 @@ class AdminViewModel(
 
     init {
         observeReports()
+        observeActiveVehicles()
+    }
+
+    fun refresh() {
+        observeReports()
+        observeActiveVehicles()
+    }
+
+    fun seedData() {
+        viewModelScope.launch {
+            try {
+                _state.update { it.copy(loading = true) }
+                logisticsRepo.seedSampleData()
+                _state.update { it.copy(loading = false, error = "Sample data seeded!") }
+            } catch (e: Exception) {
+                _state.update { it.copy(loading = false, error = "Seed failed: ${e.message}") }
+            }
+        }
+    }
+
+    private fun observeActiveVehicles() {
+        viewModelScope.launch {
+            try {
+                logisticsRepo.observeActiveVehicle().collect { vehicle ->
+                    _state.update { state -> 
+                        state.copy(activeVehicleCount = if (vehicle != null) 1 else 0, error = null) 
+                    }
+                }
+            } catch (e: Exception) {
+                _state.update { it.copy(error = "Logistics feed offline") }
+            }
+        }
     }
 
     private fun observeReports() {
