@@ -1,6 +1,7 @@
 package com.grama.wastetracker.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -63,13 +64,11 @@ fun SectionHeader(
                     letterSpacing = 1.sp,
                 ),
                 color = AccentPrimary,
-                modifier = Modifier.then(
-                    if (onTrailingClick != null) {
-                        Modifier.run {
-                            androidx.compose.foundation.clickable { onTrailingClick() }
-                        }
-                    } else Modifier
-                )
+                modifier = if (onTrailingClick != null) {
+                    Modifier.clickable { onTrailingClick() }
+                } else {
+                    Modifier
+                }
             )
         }
     }

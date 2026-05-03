@@ -152,7 +152,7 @@ fun DashboardScreen(
             }
         }
 
-        Divider(color = GramaTheme.colors.borderDim, thickness = 1.dp)
+        HorizontalDivider(color = GramaTheme.colors.borderDim, thickness = 1.dp)
 
         // ── AI Daily Insight ──
         AnimatedVisibility(
@@ -347,7 +347,7 @@ fun DashboardScreen(
         Column {
             scheduleItems.forEachIndexed { index, (day, type, time) ->
                 if (index > 0) {
-                    Divider(color = GramaTheme.colors.borderDim, thickness = 0.5.dp)
+                    HorizontalDivider(color = GramaTheme.colors.borderDim, thickness = 0.5.dp)
                 }
                 Row(
                     modifier = Modifier

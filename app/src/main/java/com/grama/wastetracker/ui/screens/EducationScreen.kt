@@ -56,7 +56,7 @@ fun EducationScreen(viewModel: EducationViewModel = viewModel()) {
             Spacer(Modifier.height(8.dp))
             Text("PUBLIC SEGREGATION STANDARDS", style = MaterialTheme.typography.labelLarge.copy(fontSize = 9.sp, letterSpacing = 2.sp), color = GramaTheme.colors.textTertiary)
         }
-        Divider(color = GramaTheme.colors.borderDim, thickness = 1.dp)
+        HorizontalDivider(color = GramaTheme.colors.borderDim, thickness = 1.dp)
 
         // AI Search
         SectionHeader(title = "Neural Assistant")
@@ -82,11 +82,11 @@ fun EducationScreen(viewModel: EducationViewModel = viewModel()) {
             AnimatedVisibility(visible = state.aiResult != null) {
                 Column {
                     Spacer(Modifier.height(16.dp))
-                    Divider(color = GramaTheme.colors.borderDim)
+                    HorizontalDivider(color = GramaTheme.colors.borderDim)
                     Spacer(Modifier.height(16.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
                         Surface(shape = RoundedCornerShape(4.dp), color = AccentPrimary.copy(0.1f), modifier = Modifier.size(32.dp)) {
-                            Box(Alignment.Center) { Icon(Icons.Default.AutoAwesome, null, tint = AccentPrimary, modifier = Modifier.size(16.dp)) }
+                            Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.AutoAwesome, null, tint = AccentPrimary, modifier = Modifier.size(16.dp)) }
                         }
                         Column {
                             Text("AI RECOMMENDATION", style = MaterialTheme.typography.labelLarge.copy(fontSize = 9.sp, letterSpacing = 2.sp), color = GramaTheme.colors.textTertiary)
@@ -110,7 +110,7 @@ fun EducationScreen(viewModel: EducationViewModel = viewModel()) {
                     Row(Modifier.fillMaxWidth().clickable { viewModel.toggleCategory(guide.category) }.padding(20.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Row(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.CenterVertically) {
                             Surface(Modifier.size(48.dp), border = BorderStroke(1.dp, if (expanded) AccentPrimary else GramaTheme.colors.borderDim), color = GramaTheme.colors.bgPrimary, shape = RoundedCornerShape(4.dp)) {
-                                Box(Alignment.Center) { Icon(guide.icon, null, tint = if (expanded) AccentPrimary else GramaTheme.colors.textTertiary, modifier = Modifier.size(24.dp)) }
+                                Box(contentAlignment = Alignment.Center) { Icon(guide.icon, null, tint = if (expanded) AccentPrimary else GramaTheme.colors.textTertiary, modifier = Modifier.size(24.dp)) }
                             }
                             Column {
                                 Text(guide.category.uppercase(), style = MaterialTheme.typography.titleMedium.copy(letterSpacing = 2.sp), color = GramaTheme.colors.textPrimary)
@@ -121,7 +121,7 @@ fun EducationScreen(viewModel: EducationViewModel = viewModel()) {
                     }
                     AnimatedVisibility(visible = expanded) {
                         Column(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 24.dp)) {
-                            Divider(color = GramaTheme.colors.borderDim)
+                            HorizontalDivider(color = GramaTheme.colors.borderDim)
                             Spacer(Modifier.height(16.dp))
                             guide.items.chunked(2).forEach { row ->
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {

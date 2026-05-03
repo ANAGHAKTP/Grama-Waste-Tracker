@@ -54,6 +54,7 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        // Feature implementation follows...
         Spacer(modifier = Modifier.weight(1f))
 
         // ── Rotating Diamond Icon ──

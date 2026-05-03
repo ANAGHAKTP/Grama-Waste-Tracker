@@ -67,7 +67,7 @@ fun AdminDashboardScreen(viewModel: AdminViewModel = viewModel()) {
             GeometricCard(borderColor = AccentPrimary.copy(0.2f)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Surface(shape = RoundedCornerShape(4.dp), color = AccentPrimary, modifier = Modifier.size(32.dp)) {
-                        Box(Alignment.Center) { Icon(Icons.Default.AutoAwesome, null, tint = Color.White, modifier = Modifier.size(16.dp)) }
+                        Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.AutoAwesome, null, tint = Color.White, modifier = Modifier.size(16.dp)) }
                     }
                     Column {
                         Text("EXECUTIVE REPORT", style = MaterialTheme.typography.labelLarge.copy(fontSize = 9.sp, letterSpacing = 2.sp), color = AccentPrimary)
@@ -97,7 +97,7 @@ fun AdminDashboardScreen(viewModel: AdminViewModel = viewModel()) {
         // Report Feed
         SectionHeader(title = "Data Feed")
         if (state.loading) {
-            Box(Modifier.fillMaxWidth().height(200.dp), Alignment.Center) { CircularProgressIndicator(color = GramaTheme.colors.textTertiary) }
+            Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = GramaTheme.colors.textTertiary) }
         } else {
             state.reports.forEach { report -> ReportCard(report = report, onResolve = { viewModel.resolveReport(report.id) }) }
         }
@@ -128,7 +128,7 @@ private fun ReportCard(report: BlackspotReport, onResolve: () -> Unit) {
         }
         if (!isResolved) {
             Spacer(Modifier.height(16.dp))
-            Divider(color = GramaTheme.colors.borderDim)
+            HorizontalDivider(color = GramaTheme.colors.borderDim)
             Spacer(Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = onResolve, Modifier.weight(1f).height(44.dp), colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary), shape = RoundedCornerShape(12.dp)) {
@@ -137,7 +137,7 @@ private fun ReportCard(report: BlackspotReport, onResolve: () -> Unit) {
                     Text("EXECUTE RESOLUTION", style = MaterialTheme.typography.labelLarge.copy(fontSize = 9.sp, letterSpacing = 2.sp))
                 }
                 Surface(Modifier.size(44.dp).clickable { }, border = BorderStroke(1.dp, GramaTheme.colors.borderDim), color = Color.Transparent, shape = RoundedCornerShape(12.dp)) {
-                    Box(Alignment.Center) { Icon(Icons.Default.OpenInNew, null, tint = GramaTheme.colors.textTertiary, modifier = Modifier.size(16.dp)) }
+                    Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.OpenInNew, null, tint = GramaTheme.colors.textTertiary, modifier = Modifier.size(16.dp)) }
                 }
             }
         }

@@ -3,6 +3,8 @@ package com.grama.wastetracker.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,13 +22,11 @@ import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -96,13 +96,10 @@ fun BottomNavBar(
                     modifier = Modifier
                         .weight(1f)
                         .padding(vertical = 8.dp)
-                        .then(
-                            Modifier.run {
-                                androidx.compose.foundation.clickable(
-                                    indication = null,
-                                    interactionSource = androidx.compose.foundation.interaction.MutableInteractionSource()
-                                ) { onNavigate(item.route) }
-                            }
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { onNavigate(item.route) }
                         ),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
@@ -110,11 +107,7 @@ fun BottomNavBar(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(50))
-                            .then(
-                                if (selected) Modifier
-                                    .padding(horizontal = 12.dp, vertical = 4.dp)
-                                else Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                            ),
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         if (selected) {
