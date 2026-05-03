@@ -56,6 +56,7 @@ class LogisticsRepository(
             // Return empty list on failure (network/permissions)
             emptyList()
         }
+    }
     /**
      * Seeds sample data into Firestore for testing.
      * Only use this during development/verification.

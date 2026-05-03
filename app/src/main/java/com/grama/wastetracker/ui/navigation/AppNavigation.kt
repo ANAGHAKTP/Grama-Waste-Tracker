@@ -14,27 +14,32 @@ import androidx.navigation.compose.rememberNavController
 import com.grama.wastetracker.data.model.UserRole
 import com.grama.wastetracker.ui.components.BottomNavBar
 import com.grama.wastetracker.ui.screens.*
+import com.grama.wastetracker.viewmodel.AuthState
 import com.grama.wastetracker.viewmodel.AuthViewModel
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
-    val authViewModel: AuthViewModel = viewModel()
-    val authState by authViewModel.state.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val authViewModel: AuthViewModel = viewModel(
+        factory = AuthViewModel.factory(context)
+    )
+    val authState by authViewModel.authState.collectAsState()
 
     val currentEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentEntry?.destination?.route
 
     // Show loading while auth resolves
-    if (authState.loading) {
+    if (authState is AuthState.Loading) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
         return
     }
 
-    val isLoggedIn = authState.user != null && authState.profile != null
-    val isAdmin = authState.profile?.userRole == UserRole.ADMIN
+    val isLoggedIn = authState is AuthState.Success
+    val profile = (authState as? AuthState.Success)?.profile
+    val isAdmin = profile?.userRole == UserRole.ADMIN
     val showBottomBar = isLoggedIn && currentRoute != "login"
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -44,8 +49,7 @@ fun AppNavigation() {
         ) {
             composable("login") {
                 LoginScreen(
-                    authViewModel = authViewModel,
-                    onLoginSuccess = {
+                    onAuthSuccess = {
                         navController.navigate("dashboard") {
                             popUpTo("login") { inclusive = true }
                         }
@@ -55,10 +59,11 @@ fun AppNavigation() {
 
             composable("dashboard") {
                 DashboardScreen(
-                    profile = authState.profile,
+                    profile = profile,
                     authViewModel = authViewModel,
                     onNavigate = { route -> navController.navigate(route) },
                     onSignOut = {
+                        authViewModel.signOut()
                         navController.navigate("login") {
                             popUpTo(0) { inclusive = true }
                         }

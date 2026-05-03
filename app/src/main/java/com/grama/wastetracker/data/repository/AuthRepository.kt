@@ -1,100 +1,75 @@
 package com.grama.wastetracker.data.repository
 
-import android.app.Activity
-import com.google.firebase.FirebaseException
+import android.content.Context
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.auth.PhoneAuthCredential
-import com.google.firebase.auth.PhoneAuthOptions
-import com.google.firebase.auth.PhoneAuthProvider
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 import com.grama.wastetracker.data.model.UserProfile
 import com.grama.wastetracker.data.model.UserRole
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import java.time.Instant
-import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
-/**
- * Repository for Firebase Phone/OTP Authentication and user profile management.
- */
 class AuthRepository(
+    private val context: Context,
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
-    /**
-     * Observe auth state changes as a Flow of nullable FirebaseUser.
-     */
-    fun observeAuthState(): Flow<FirebaseUser?> = callbackFlow {
-        val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
-            trySend(firebaseAuth.currentUser)
+    private val credentialManager = CredentialManager.create(context)
+
+    suspend fun signInWithGoogle(webClientId: String): Result<UserProfile> {
+        return try {
+            val googleIdOption = GetGoogleIdOption.Builder()
+                .setFilterByAuthorizedAccounts(false)
+                .setServerClientId(webClientId)
+                .setAutoSelectEnabled(true)
+                .build()
+
+            val request = GetCredentialRequest.Builder()
+                .addCredentialOption(googleIdOption)
+                .build()
+
+            val result = credentialManager.getCredential(
+                request = request,
+                context = context
+            )
+
+            handleSignIn(result)
+        } catch (e: GetCredentialException) {
+            Result.failure(e)
+        } catch (e: Exception) {
+            Result.failure(e)
         }
-        auth.addAuthStateListener(listener)
-        awaitClose { auth.removeAuthStateListener(listener) }
     }
 
-    /**
-     * Send OTP to the given phone number.
-     * Returns the verification ID via callback, or auto-verifies if possible.
-     */
-    fun sendOtp(
-        phoneNumber: String,
-        activity: Activity,
-        onCodeSent: (verificationId: String) -> Unit,
-        onAutoVerified: (credential: PhoneAuthCredential) -> Unit,
-        onError: (Exception) -> Unit
-    ) {
-        val callbacks = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
-            override fun onVerificationCompleted(credential: PhoneAuthCredential) {
-                // Auto-verification (e.g., Google Play auto-read SMS)
-                onAutoVerified(credential)
-            }
+    private suspend fun handleSignIn(result: androidx.credentials.GetCredentialResponse): Result<UserProfile> {
+        val credential = result.credential
+        if (credential is CustomCredential &&
+            credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
 
-            override fun onVerificationFailed(e: FirebaseException) {
-                onError(e)
-            }
+            val googleIdToken = GoogleIdTokenCredential.createFrom(credential.data).idToken
+            val firebaseCredential = GoogleAuthProvider.getCredential(googleIdToken, null)
 
-            override fun onCodeSent(
-                verificationId: String,
-                token: PhoneAuthProvider.ForceResendingToken
-            ) {
-                onCodeSent(verificationId)
+            return try {
+                val authResult = auth.signInWithCredential(firebaseCredential).await()
+                val user = authResult.user ?: throw Exception("Sign-in succeeded but user is null")
+                val profile = getOrCreateProfile(user)
+                Result.success(profile)
+            } catch (e: Exception) {
+                Result.failure(e)
             }
         }
-
-        val options = PhoneAuthOptions.newBuilder(auth)
-            .setPhoneNumber(phoneNumber)
-            .setTimeout(60L, TimeUnit.SECONDS)
-            .setActivity(activity)
-            .setCallbacks(callbacks)
-            .build()
-
-        PhoneAuthProvider.verifyPhoneNumber(options)
+        return Result.failure(Exception("Invalid credential type"))
     }
 
-    /**
-     * Verify the OTP code using the verification ID.
-     */
-    suspend fun verifyOtp(verificationId: String, code: String): UserProfile {
-        val credential = PhoneAuthProvider.getCredential(verificationId, code)
-        return signInWithCredential(credential)
-    }
-
-    /**
-     * Sign in with a PhoneAuthCredential (from OTP or auto-verify).
-     * Creates a Firestore user profile if one doesn't exist.
-     */
-    suspend fun signInWithCredential(credential: PhoneAuthCredential): UserProfile {
-        val result = auth.signInWithCredential(credential).await()
-        val user = result.user ?: throw IllegalStateException("Sign-in succeeded but user is null")
-        return getOrCreateProfile(user)
-    }
-
-    /**
-     * Fetch the user profile from Firestore, creating it if it doesn't exist.
-     */
     suspend fun getOrCreateProfile(user: FirebaseUser): UserProfile {
         val docRef = db.collection("users").document(user.uid)
         val snapshot = docRef.get().await()
@@ -115,24 +90,15 @@ class AuthRepository(
         }
     }
 
-    /**
-     * Fetch the current user's profile from Firestore.
-     */
     suspend fun getCurrentProfile(): UserProfile? {
         val uid = auth.currentUser?.uid ?: return null
         val snapshot = db.collection("users").document(uid).get().await()
         return snapshot.toObject(UserProfile::class.java)
     }
 
-    /**
-     * Sign out the current user.
-     */
+    fun getCurrentUser(): FirebaseUser? = auth.currentUser
+
     fun signOut() {
         auth.signOut()
     }
-
-    /**
-     * Returns the current Firebase user, or null.
-     */
-    fun currentUser(): FirebaseUser? = auth.currentUser
 }
