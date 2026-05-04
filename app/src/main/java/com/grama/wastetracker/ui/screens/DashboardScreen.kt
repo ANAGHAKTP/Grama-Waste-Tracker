@@ -272,7 +272,10 @@ fun DashboardScreen(
                             color = if (dashState.activeVehicle != null) Color.White else GramaTheme.colors.textPrimary
                         )
                         Text(
-                            text = dashState.activeVehicle?.let { "CURRENT SECTOR • ${it.id.take(8).uppercase()}" } ?: "Fleet currently stationed",
+                            text = dashState.activeVehicle?.let { 
+                                if (it.sector.isNotEmpty()) "CURRENT SECTOR • ${it.sector.uppercase()}"
+                                else "CURRENT SECTOR • ${it.id.take(8).uppercase()}"
+                            } ?: "Fleet currently stationed",
                             style = MaterialTheme.typography.labelMedium.copy(
                                 letterSpacing = 2.sp
                             ),
@@ -387,7 +390,7 @@ fun DashboardScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = schedule.dayOfWeek.take(3).uppercase(),
+                                text = (if (schedule.day.isNotEmpty()) schedule.day else schedule.dayOfWeek.take(3)).uppercase(),
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     fontWeight = FontWeight.Bold,
                                     fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
@@ -397,12 +400,12 @@ fun DashboardScreen(
                             )
                             Column {
                                 Text(
-                                    text = schedule.route,
+                                    text = if (schedule.wasteType.isNotEmpty()) schedule.wasteType else schedule.route,
                                     style = MaterialTheme.typography.titleMedium,
                                     color = GramaTheme.colors.textPrimary
                                 )
                                 Text(
-                                    text = "${schedule.expectedTime} • COLLECTION",
+                                    text = "${if (schedule.time.isNotEmpty()) schedule.time else schedule.expectedTime} • COLLECTION",
                                     style = MaterialTheme.typography.labelMedium.copy(
                                         fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                                         fontStyle = androidx.compose.ui.text.font.FontStyle.Italic

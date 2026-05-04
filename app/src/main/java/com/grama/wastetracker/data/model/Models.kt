@@ -61,7 +61,9 @@ data class Vehicle(
     val status: String = VehicleStatus.IDLE.value,
     val lastUpdate: String = "",
     val vehicleNumber: String = "",
-    val etaMinutes: Int? = null
+    val etaMinutes: Int? = null,
+    val route: String = "",
+    val sector: String = ""
 )
 
 /**
@@ -120,7 +122,10 @@ data class Schedule(
     val id: String = "",
     val dayOfWeek: String = "",
     val route: String = "",
-    val expectedTime: String = ""
+    val expectedTime: String = "",
+    val day: String = "",
+    val wasteType: String = "",
+    val time: String = ""
 )
 
 /**

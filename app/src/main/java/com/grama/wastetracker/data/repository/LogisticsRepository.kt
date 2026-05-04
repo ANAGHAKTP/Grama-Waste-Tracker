@@ -67,7 +67,9 @@ class LogisticsRepository(
             "driverId" to "driver_001",
             "status" to "active",
             "vehicleNumber" to "GA-01-1234",
-            "etaMinutes" to 15,
+            "etaMinutes" to 12,
+            "route" to "Market Road",
+            "sector" to "Sector 04",
             "location" to hashMapOf("lat" to 12.9716, "lng" to 77.5946),
             "lastUpdate" to java.time.Instant.now().toString()
         )
@@ -75,13 +77,13 @@ class LogisticsRepository(
 
         // 2. Seed Weekly Schedule
         val scheduleList = listOf(
-            Schedule(id = "mon", dayOfWeek = "Monday", route = "Main Street", expectedTime = "08:00 AM"),
-            Schedule(id = "wed", dayOfWeek = "Wednesday", route = "Market Road", expectedTime = "07:30 AM"),
-            Schedule(id = "fri", dayOfWeek = "Friday", route = "Sector 04", expectedTime = "09:00 AM")
+            hashMapOf("day" to "MON", "wasteType" to "Dry Waste", "time" to "08:00"),
+            hashMapOf("day" to "WED", "wasteType" to "Wet Waste", "time" to "07:30"),
+            hashMapOf("day" to "FRI", "wasteType" to "Recyclables", "time" to "09:00")
         )
 
-        scheduleList.forEach { schedule ->
-            db.collection("schedules").document(schedule.id).set(schedule).await()
+        scheduleList.forEachIndexed { index, data ->
+            db.collection("schedules").document("schedule_$index").set(data).await()
         }
     }
 }
