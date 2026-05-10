@@ -33,7 +33,9 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.*
 import com.grama.wastetracker.R
@@ -62,19 +64,19 @@ fun LiveMapScreen(
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
-        onResult = { isGranted -> hasLocationPermission = isGranted }
+        onResult = { isGranted -> 
+            hasLocationPermission = isGranted 
+        }
     )
 
-    // Force fetch current location and sync simulation to User's area
+    // Force fetch fresh user coordinates to move simulation out of Bengaluru
     LaunchedEffect(hasLocationPermission) {
         if (hasLocationPermission) {
             val cts = CancellationTokenSource()
             fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cts.token)
                 .addOnSuccessListener { location ->
                     location?.let {
-                        mapViewModel.syncSimulationWithUser(
-                            com.google.android.gms.maps.model.LatLng(it.latitude, it.longitude)
-                        )
+                        mapViewModel.syncSimulationWithUser(LatLng(it.latitude, it.longitude))
                     }
                 }
         } else {
@@ -82,9 +84,8 @@ fun LiveMapScreen(
         }
     }
 
-    val vehiclePosition = com.google.android.gms.maps.model.LatLng(state.vehicleLat, state.vehicleLng)
+    val vehiclePosition = LatLng(state.vehicleLat, state.vehicleLng)
     val cameraPositionState = rememberCameraPositionState {
-        // Default initial camera if location isn't ready
         position = CameraPosition.fromLatLngZoom(vehiclePosition, 16f)
     }
 
@@ -128,13 +129,11 @@ fun LiveMapScreen(
     Box(modifier = Modifier.fillMaxSize().background(GramaTheme.colors.bgPrimary)) {
         if (state.isLoading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = AccentPrimary)
-                Text(
-                    "Establishing GPS Uplink...",
-                    Modifier.padding(top = 80.dp),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = GramaTheme.colors.textTertiary
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(color = AccentPrimary)
+                    Spacer(Modifier.height(16.dp))
+                    Text("Acquiring GPS...", style = MaterialTheme.typography.bodyMedium, color = GramaTheme.colors.textPrimary)
+                }
             }
         }
 
@@ -147,7 +146,7 @@ fun LiveMapScreen(
             ),
             uiSettings = MapUiSettings(
                 zoomControlsEnabled = false,
-                myLocationButtonEnabled = false,
+                myLocationButtonEnabled = true,
                 compassEnabled = true
             ),
             onMapClick = { followVehicle = false }
@@ -161,11 +160,13 @@ fun LiveMapScreen(
                 )
             }
 
-            // User's Home Marker
-            if (state.userLat != null && state.userLng != null) {
+            // User's Real Location Marker
+            val uLat = state.userLat
+            val uLng = state.userLng
+            if (uLat != null && uLng != null) {
                 Marker(
-                    state = MarkerState(position = com.google.android.gms.maps.model.LatLng(state.userLat!!, state.userLng!!)),
-                    title = "Your Location",
+                    state = MarkerState(position = LatLng(uLat, uLng)),
+                    title = "Your Home",
                     icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
                 )
             }
@@ -257,7 +258,7 @@ fun LiveMapScreen(
             }
         }
 
-        // ── Map Controls ──
+        // ── Re-center FAB ──
         if (!state.isLoading) {
             FloatingActionButton(
                 onClick = { 

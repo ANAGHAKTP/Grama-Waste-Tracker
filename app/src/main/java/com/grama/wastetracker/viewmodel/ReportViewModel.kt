@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.grama.wastetracker.data.model.LatLng
 import com.grama.wastetracker.data.model.WasteAnalysis
 import com.grama.wastetracker.data.repository.GeminiRepository
 import com.grama.wastetracker.data.repository.ReportRepository
@@ -32,6 +33,7 @@ enum class ReportMode { GENERAL, OFFENDER }
 data class ReportState(
     val reportMode: ReportMode = ReportMode.GENERAL,
     val imageUri: Uri? = null,
+    val userLocation: LatLng? = null,
     val analyzing: Boolean = false,
     val aiAnalysis: WasteAnalysis? = null,
     val aiAnalysisText: String? = null,
@@ -50,6 +52,10 @@ class ReportViewModel(
     val state: StateFlow<ReportState> = _state.asStateFlow()
 
     private var pendingCameraUri: Uri? = null
+
+    fun setLocation(lat: Double, lng: Double) {
+        _state.update { it.copy(userLocation = LatLng(lat, lng)) }
+    }
 
     fun createImageUri(context: Context): Uri {
         val imageFile = File(
@@ -89,7 +95,6 @@ class ReportViewModel(
                     android.provider.MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
                 }
                 
-                // Copy bitmap to mutable hardware independent bitmap if needed, but Gemini usually accepts any Bitmap.
                 val argbBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true)
                 val downscaledBitmap = argbBitmap.downscaleForAnalysis()
                 
@@ -108,7 +113,6 @@ class ReportViewModel(
         }
     }
 
-
     fun updateDescription(desc: String) {
         _state.update { it.copy(description = desc) }
     }
@@ -118,13 +122,17 @@ class ReportViewModel(
     }
 
     fun submitReport(issueType: String) {
+        val currentState = _state.value
         viewModelScope.launch {
             _state.update { it.copy(submitting = true, error = null) }
             try {
                 reportRepo.submitReport(
-                    state = _state.value,
-                    issueType = issueType,
-                    reporterUid = reportRepo.getCurrentUserId()
+                    imageUri = currentState.imageUri,
+                    description = currentState.description,
+                    aiAnalysis = currentState.aiAnalysisText,
+                    location = currentState.userLocation,
+                    type = currentState.reportMode.name.lowercase(),
+                    issueType = issueType
                 )
                 _state.update { it.copy(submitting = false, submitted = true) }
             } catch (e: Exception) {

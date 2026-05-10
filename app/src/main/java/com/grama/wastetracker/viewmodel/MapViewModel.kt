@@ -19,7 +19,7 @@ data class MapState(
     val vehicleRotation: Float = 0f,
     val eta: Int = 0,
     val distanceKm: Double = 0.0,
-    val isLoading: Boolean = true, // Shows "Establishing Uplink" until GPS fix
+    val isLoading: Boolean = true, // Force loading until real GPS lock
     val routePoints: List<LatLng> = emptyList()
 )
 
@@ -31,16 +31,25 @@ class MapViewModel : ViewModel() {
     private var simulationJob: Job? = null
 
     /**
-     * Resets the mock truck to a new starting point relative to the user's real location.
+     * Syncs the simulation with the user's actual location.
+     * This moves the mock truck to your real area.
      */
     fun syncSimulationWithUser(userLocation: LatLng) {
-        if (_state.value.userLat != null) return // Already synced
+        // Only sync if we haven't found the user yet or they moved significantly
+        val currentLat = _state.value.userLat
+        val currentLng = _state.value.userLng
+        
+        if (currentLat != null && currentLng != null) {
+            val dist = FloatArray(1)
+            Location.distanceBetween(currentLat, currentLng, userLocation.latitude, userLocation.longitude, dist)
+            if (dist[0] < 50) return // Stay on current track if movement is minor
+        }
 
         simulationJob?.cancel()
         
-        // Spawn the truck ~600m away from the user
-        val startLat = userLocation.latitude - 0.004
-        val startLng = userLocation.longitude - 0.003
+        // Place the mock truck in your neighborhood (~500m away)
+        val startLat = userLocation.latitude - 0.003
+        val startLng = userLocation.longitude - 0.002
         
         _state.value = _state.value.copy(
             userLat = userLocation.latitude,
@@ -63,13 +72,14 @@ class MapViewModel : ViewModel() {
             while (true) {
                 delay(4_000)
                 _state.value = _state.value.let { current ->
-                    if (current.userLat == null) return@let current
+                    val uLat = current.userLat ?: return@let current
+                    val uLng = current.userLng ?: return@let current
                     
-                    // Truck moves slowly toward the user's house
-                    val nextLat = current.vehicleLat + 0.00012
-                    val nextLng = current.vehicleLng + 0.00009
+                    // Truck moves slowly toward your real location
+                    val nextLat = current.vehicleLat + 0.0001
+                    val nextLng = current.vehicleLng + 0.00008
                     
-                    updateLogistics(nextLat, nextLng, current.userLat, current.userLng!!)
+                    updateLogistics(nextLat, nextLng, uLat, uLng)
                     
                     current.copy(
                         vehicleLat = nextLat,
@@ -85,7 +95,7 @@ class MapViewModel : ViewModel() {
         val results = FloatArray(1)
         Location.distanceBetween(vLat, vLng, uLat, uLng, results)
         val distanceKm = results[0] / 1000.0
-        val eta = (distanceKm / 18.0 * 60).toInt().coerceAtLeast(1)
+        val eta = (distanceKm / 15.0 * 60).toInt().coerceAtLeast(1)
         
         _state.value = _state.value.copy(
             distanceKm = distanceKm,
