@@ -1,6 +1,7 @@
 package com.grama.wastetracker.ui.screens
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -28,6 +29,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.MapStyleOptions
@@ -37,6 +41,7 @@ import com.grama.wastetracker.ui.components.GeometricCard
 import com.grama.wastetracker.ui.theme.*
 import com.grama.wastetracker.viewmodel.MapViewModel
 
+@SuppressLint("MissingPermission")
 @Composable
 fun LiveMapScreen(
     mapViewModel: MapViewModel = viewModel()
@@ -44,6 +49,7 @@ fun LiveMapScreen(
     val state by mapViewModel.state.collectAsState()
     val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     
     var isProtocolAcknowledged by remember { mutableStateOf(false) }
     var followVehicle by remember { mutableStateOf(true) }
@@ -59,20 +65,32 @@ fun LiveMapScreen(
         onResult = { isGranted -> hasLocationPermission = isGranted }
     )
 
-    LaunchedEffect(Unit) {
-        if (!hasLocationPermission) {
+    // Force fetch current location and sync simulation to User's area
+    LaunchedEffect(hasLocationPermission) {
+        if (hasLocationPermission) {
+            val cts = CancellationTokenSource()
+            fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cts.token)
+                .addOnSuccessListener { location ->
+                    location?.let {
+                        mapViewModel.syncSimulationWithUser(
+                            com.google.android.gms.maps.model.LatLng(it.latitude, it.longitude)
+                        )
+                    }
+                }
+        } else {
             launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         }
     }
 
     val vehiclePosition = com.google.android.gms.maps.model.LatLng(state.vehicleLat, state.vehicleLng)
     val cameraPositionState = rememberCameraPositionState {
+        // Default initial camera if location isn't ready
         position = CameraPosition.fromLatLngZoom(vehiclePosition, 16f)
     }
 
-    // Smoothly track vehicle if "Follow" is enabled
+    // Auto-track vehicle movement
     LaunchedEffect(vehiclePosition, followVehicle) {
-        if (followVehicle) {
+        if (followVehicle && !state.isLoading) {
             cameraPositionState.animate(
                 update = CameraUpdateFactory.newLatLng(vehiclePosition),
                 durationMs = 1000
@@ -108,7 +126,18 @@ fun LiveMapScreen(
     )
 
     Box(modifier = Modifier.fillMaxSize().background(GramaTheme.colors.bgPrimary)) {
-        // ── Google Map ──
+        if (state.isLoading) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = AccentPrimary)
+                Text(
+                    "Establishing GPS Uplink...",
+                    Modifier.padding(top = 80.dp),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = GramaTheme.colors.textTertiary
+                )
+            }
+        }
+
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
@@ -121,15 +150,23 @@ fun LiveMapScreen(
                 myLocationButtonEnabled = false,
                 compassEnabled = true
             ),
-            onMapClick = { followVehicle = false } // Disable follow on manual interaction
+            onMapClick = { followVehicle = false }
         ) {
-            // Draw Route Path (Polyline)
             if (state.routePoints.isNotEmpty()) {
                 Polyline(
                     points = state.routePoints,
                     color = AccentPrimary.copy(alpha = 0.6f),
                     width = 12f,
                     jointType = com.google.android.gms.maps.model.JointType.ROUND
+                )
+            }
+
+            // User's Home Marker
+            if (state.userLat != null && state.userLng != null) {
+                Marker(
+                    state = MarkerState(position = com.google.android.gms.maps.model.LatLng(state.userLat!!, state.userLng!!)),
+                    title = "Your Location",
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
                 )
             }
 
@@ -156,25 +193,16 @@ fun LiveMapScreen(
                             imageVector = Icons.Default.Navigation,
                             contentDescription = null,
                             tint = Color.White,
-                            modifier = Modifier
-                                .padding(4.dp)
-                                .rotate(state.vehicleRotation) // Applied vehicle heading
+                            modifier = Modifier.padding(4.dp).rotate(state.vehicleRotation)
                         )
                     }
                 }
             }
         }
 
-        if (state.isLoading) {
-            LinearProgressIndicator(
-                modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
-                color = AccentPrimary
-            )
-        }
-
-        // ── Floating Status Card (Top) ──
+        // ── Logistics HUD ──
         AnimatedVisibility(
-            visible = true,
+            visible = !state.isLoading,
             enter = slideInVertically { -it },
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -222,7 +250,7 @@ fun LiveMapScreen(
                         ) {
                             StatusItem(Icons.Default.Schedule, "${state.eta} MIN")
                             DividerDot()
-                            StatusItem(Icons.Default.Route, "${"%.1f".format(state.distance)} KM")
+                            StatusItem(Icons.Default.Route, "${"%.2f".format(state.distanceKm)} KM")
                         }
                     }
                 }
@@ -230,18 +258,15 @@ fun LiveMapScreen(
         }
 
         // ── Map Controls ──
-        Column(
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(end = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Re-center/Follow Toggle
+        if (!state.isLoading) {
             FloatingActionButton(
                 onClick = { 
                     followVehicle = true
                     cameraPositionState.position = CameraPosition.fromLatLngZoom(vehiclePosition, 16f)
                 },
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 16.dp),
                 containerColor = if (followVehicle) AccentPrimary else GramaTheme.colors.bgSecondary,
                 contentColor = if (followVehicle) Color.White else AccentPrimary,
                 shape = CircleShape
@@ -253,9 +278,9 @@ fun LiveMapScreen(
             }
         }
 
-        // ── Bottom Info Card (Dismissible) ──
+        // ── Protocol Card ──
         AnimatedVisibility(
-            visible = !isProtocolAcknowledged,
+            visible = !isProtocolAcknowledged && !state.isLoading,
             enter = slideInVertically { it },
             exit = slideOutVertically { it },
             modifier = Modifier
@@ -353,11 +378,6 @@ private fun StatusItem(icon: androidx.compose.ui.graphics.vector.ImageVector, te
 @Composable
 private fun DividerDot() {
     Box(
-        modifier = Modifier
-            .size(4.dp)
-            .background(
-                GramaTheme.colors.borderDim,
-                RoundedCornerShape(50)
-            )
+        modifier = Modifier.size(4.dp).background(GramaTheme.colors.borderDim, CircleShape)
     )
 }

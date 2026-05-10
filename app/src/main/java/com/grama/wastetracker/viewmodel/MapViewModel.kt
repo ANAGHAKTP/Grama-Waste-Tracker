@@ -1,5 +1,6 @@
 package com.grama.wastetracker.viewmodel
 
+import android.location.Location
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.model.LatLng
@@ -11,12 +12,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 data class MapState(
-    val vehicleLat: Double = 12.9716,
-    val vehicleLng: Double = 77.5946,
+    val vehicleLat: Double = 0.0,
+    val vehicleLng: Double = 0.0,
+    val userLat: Double? = null,
+    val userLng: Double? = null,
     val vehicleRotation: Float = 0f,
-    val eta: Int = 12,
-    val distance: Double = 0.8,
-    val isLoading: Boolean = false,
+    val eta: Int = 0,
+    val distanceKm: Double = 0.0,
+    val isLoading: Boolean = true, // Shows "Establishing Uplink" until GPS fix
     val routePoints: List<LatLng> = emptyList()
 )
 
@@ -27,46 +30,66 @@ class MapViewModel : ViewModel() {
 
     private var simulationJob: Job? = null
 
-    init {
-        // Initialize with default mock route
-        resetSimulation(LatLng(12.9716, 77.5946))
-    }
-
     /**
-     * Resets the mock truck to a new starting point (e.g., the user's location)
+     * Resets the mock truck to a new starting point relative to the user's real location.
      */
-    fun resetSimulation(startLocation: LatLng) {
+    fun syncSimulationWithUser(userLocation: LatLng) {
+        if (_state.value.userLat != null) return // Already synced
+
         simulationJob?.cancel()
         
+        // Spawn the truck ~600m away from the user
+        val startLat = userLocation.latitude - 0.004
+        val startLng = userLocation.longitude - 0.003
+        
         _state.value = _state.value.copy(
-            vehicleLat = startLocation.latitude,
-            vehicleLng = startLocation.longitude,
+            userLat = userLocation.latitude,
+            userLng = userLocation.longitude,
+            vehicleLat = startLat,
+            vehicleLng = startLng,
+            isLoading = false,
             routePoints = listOf(
-                startLocation,
-                LatLng(startLocation.latitude + 0.001, startLocation.longitude + 0.001),
-                LatLng(startLocation.latitude + 0.002, startLocation.longitude + 0.002)
+                LatLng(startLat, startLng),
+                LatLng(userLocation.latitude, userLocation.longitude)
             )
         )
         
+        updateLogistics(startLat, startLng, userLocation.latitude, userLocation.longitude)
         startMoving()
     }
 
     private fun startMoving() {
         simulationJob = viewModelScope.launch {
-            var step = 0
             while (true) {
-                delay(5_000)
+                delay(4_000)
                 _state.value = _state.value.let { current ->
-                    step++
+                    if (current.userLat == null) return@let current
+                    
+                    // Truck moves slowly toward the user's house
+                    val nextLat = current.vehicleLat + 0.00012
+                    val nextLng = current.vehicleLng + 0.00009
+                    
+                    updateLogistics(nextLat, nextLng, current.userLat, current.userLng!!)
+                    
                     current.copy(
-                        vehicleLat = current.vehicleLat + 0.0001,
-                        vehicleLng = current.vehicleLng + 0.0001,
-                        vehicleRotation = 45f,
-                        eta = maxOf(1, current.eta - 1),
-                        distance = maxOf(0.1, current.distance - 0.05)
+                        vehicleLat = nextLat,
+                        vehicleLng = nextLng,
+                        vehicleRotation = 40f
                     )
                 }
             }
         }
+    }
+
+    private fun updateLogistics(vLat: Double, vLng: Double, uLat: Double, uLng: Double) {
+        val results = FloatArray(1)
+        Location.distanceBetween(vLat, vLng, uLat, uLng, results)
+        val distanceKm = results[0] / 1000.0
+        val eta = (distanceKm / 18.0 * 60).toInt().coerceAtLeast(1)
+        
+        _state.value = _state.value.copy(
+            distanceKm = distanceKm,
+            eta = eta
+        )
     }
 }

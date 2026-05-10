@@ -94,9 +94,10 @@ dependencies {
     // Google AI (Gemini)
     implementation(libs.generative.ai)
 
-    // Google Maps
+    // Google Maps & Location
     implementation(libs.maps.compose)
     implementation(libs.play.services.maps)
+    implementation(libs.play.services.location) // Added missing dependency
 
     // Image Loading
     implementation(libs.coil.compose)
