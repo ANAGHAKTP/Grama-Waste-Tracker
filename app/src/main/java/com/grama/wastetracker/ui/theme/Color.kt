@@ -25,8 +25,8 @@ val DarkTextTertiary = Color(0xFF7A8B9E)
 val DarkBorderDim = Color(0xFF3A4A5D)
 
 // ── Accent colors (shared across themes) ──
-val AccentPrimary = Color(0xFF7C3AED)    // Solid Violet
-val AccentSecondary = Color(0xFFEC4899)  // Pink
+val AccentPrimary = Color(0xFF2E7D32)    // Vibrant Forest Green
+val AccentSecondary = Color(0xFF4CAF50)  // Leaf Green
 val AccentTertiary = Color(0xFF10B981)   // Green
 val AccentError = Color(0xFFEF4444)      // Red
 

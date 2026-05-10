@@ -21,9 +21,10 @@ googleServices = "4.4.2"
 # Google AI
 generativeAi = "0.9.0"
 
-# Maps
+# Maps & Location
 mapsCompose = "6.2.1"
 playServicesMaps = "19.0.0"
+playServicesLocation = "21.3.0"
 
 # Image Loading
 coil = "3.0.4"
@@ -39,6 +40,9 @@ cameraX = "1.4.1"
 coreKtx = "1.15.0"
 coroutines = "1.9.0"
 
+# Fonts
+googleFonts = "1.7.6"
+
 [libraries]
 # Material
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
@@ -53,7 +57,7 @@ compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 compose-material-icons = { group = "androidx.compose.material", name = "material-icons-extended" }
 compose-animation = { group = "androidx.compose.animation", name = "animation" }
 compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
-compose-ui-text-google-fonts = { group = "androidx.compose.ui", name = "ui-text-google-fonts" }
+compose-ui-text-google-fonts = { group = "androidx.compose.ui", name = "ui-text-google-fonts", version.ref = "googleFonts" }
 
 # Activity & Navigation
 activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
@@ -75,6 +79,7 @@ generative-ai = { group = "com.google.ai.client.generativeai", name = "generativ
 # Maps
 maps-compose = { group = "com.google.maps.android", name = "maps-compose", version.ref = "mapsCompose" }
 play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
+play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 
 # Image Loading
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }

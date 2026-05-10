@@ -1,5 +1,9 @@
 package com.grama.wastetracker.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
@@ -15,15 +19,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.*
 import com.grama.wastetracker.R
@@ -40,10 +46,38 @@ fun LiveMapScreen(
     val isDark = isSystemInDarkTheme()
     
     var isProtocolAcknowledged by remember { mutableStateOf(false) }
+    var followVehicle by remember { mutableStateOf(true) }
+    
+    var hasLocationPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted -> hasLocationPermission = isGranted }
+    )
+
+    LaunchedEffect(Unit) {
+        if (!hasLocationPermission) {
+            launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+    }
 
     val vehiclePosition = com.google.android.gms.maps.model.LatLng(state.vehicleLat, state.vehicleLng)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(vehiclePosition, 16f)
+    }
+
+    // Smoothly track vehicle if "Follow" is enabled
+    LaunchedEffect(vehiclePosition, followVehicle) {
+        if (followVehicle) {
+            cameraPositionState.animate(
+                update = CameraUpdateFactory.newLatLng(vehiclePosition),
+                durationMs = 1000
+            )
+        }
     }
 
     val mapStyle = remember(isDark) {
@@ -78,13 +112,28 @@ fun LiveMapScreen(
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
-            properties = MapProperties(mapStyleOptions = mapStyle),
+            properties = MapProperties(
+                mapStyleOptions = mapStyle,
+                isMyLocationEnabled = hasLocationPermission
+            ),
             uiSettings = MapUiSettings(
                 zoomControlsEnabled = false,
                 myLocationButtonEnabled = false,
                 compassEnabled = true
-            )
+            ),
+            onMapClick = { followVehicle = false } // Disable follow on manual interaction
         ) {
+            // Draw Route Path (Polyline)
+            if (state.routePoints.isNotEmpty()) {
+                Polyline(
+                    points = state.routePoints,
+                    color = AccentPrimary.copy(alpha = 0.6f),
+                    width = 12f,
+                    jointType = com.google.android.gms.maps.model.JointType.ROUND
+                )
+            }
+
+            // Vehicle Marker
             MarkerComposable(
                 state = MarkerState(position = vehiclePosition),
                 title = "Unit GA-01-1234",
@@ -104,18 +153,26 @@ fun LiveMapScreen(
                         modifier = Modifier.size(24.dp)
                     ) {
                         Icon(
-                            Icons.Default.Navigation,
-                            null,
+                            imageVector = Icons.Default.Navigation,
+                            contentDescription = null,
                             tint = Color.White,
-                            modifier = Modifier.padding(4.dp)
+                            modifier = Modifier
+                                .padding(4.dp)
+                                .rotate(state.vehicleRotation) // Applied vehicle heading
                         )
                     }
                 }
             }
         }
 
+        if (state.isLoading) {
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
+                color = AccentPrimary
+            )
+        }
+
         // ── Floating Status Card (Top) ──
-        // Matches the subtle white card in the reference image
         AnimatedVisibility(
             visible = true,
             enter = slideInVertically { -it },
@@ -125,7 +182,7 @@ fun LiveMapScreen(
         ) {
             GeometricCard(
                 elevation = 12.dp,
-                backgroundColor = Color.White,
+                backgroundColor = if (isDark) GramaTheme.colors.bgSecondary else Color.White,
                 borderColor = GramaTheme.colors.borderDim.copy(alpha = 0.5f),
                 contentPadding = 20.dp
             ) {
@@ -144,7 +201,7 @@ fun LiveMapScreen(
                                 imageVector = Icons.Default.Navigation,
                                 contentDescription = null,
                                 tint = AccentPrimary,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(24.dp).rotate(state.vehicleRotation)
                             )
                         }
                     }
@@ -165,15 +222,38 @@ fun LiveMapScreen(
                         ) {
                             StatusItem(Icons.Default.Schedule, "${state.eta} MIN")
                             DividerDot()
-                            StatusItem(Icons.Default.Route, "0.8 KM")
+                            StatusItem(Icons.Default.Route, "${"%.1f".format(state.distance)} KM")
                         }
                     }
                 }
             }
         }
 
+        // ── Map Controls ──
+        Column(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Re-center/Follow Toggle
+            FloatingActionButton(
+                onClick = { 
+                    followVehicle = true
+                    cameraPositionState.position = CameraPosition.fromLatLngZoom(vehiclePosition, 16f)
+                },
+                containerColor = if (followVehicle) AccentPrimary else GramaTheme.colors.bgSecondary,
+                contentColor = if (followVehicle) Color.White else AccentPrimary,
+                shape = CircleShape
+            ) {
+                Icon(
+                    imageVector = if (followVehicle) Icons.Default.GpsFixed else Icons.Default.GpsNotFixed,
+                    contentDescription = "Toggle Follow"
+                )
+            }
+        }
+
         // ── Bottom Info Card (Dismissible) ──
-        // Matches the light lavender tint in the reference image
         AnimatedVisibility(
             visible = !isProtocolAcknowledged,
             enter = slideInVertically { it },
@@ -185,7 +265,7 @@ fun LiveMapScreen(
         ) {
             GeometricCard(
                 elevation = 16.dp,
-                backgroundColor = Color(0xFFF3F4FF), // Light lavender tint from image
+                backgroundColor = if (isDark) GramaTheme.colors.bgTertiary else Color(0xFFF3F4FF),
                 borderColor = AccentPrimary.copy(alpha = 0.1f),
                 contentPadding = 24.dp
             ) {
@@ -232,7 +312,7 @@ fun LiveMapScreen(
                         onClick = { isProtocolAcknowledged = true },
                         modifier = Modifier.fillMaxWidth().height(48.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary),
-                        shape = RoundedCornerShape(4.dp) // Rectangular rounding from image
+                        shape = RoundedCornerShape(4.dp)
                     ) {
                         Text(
                             text = "ACKNOWLEDGE",
@@ -281,4 +361,3 @@ private fun DividerDot() {
             )
     )
 }
-

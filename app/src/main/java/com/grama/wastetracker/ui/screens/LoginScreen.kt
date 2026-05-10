@@ -1,6 +1,7 @@
 package com.grama.wastetracker.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,24 +47,16 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Branding — match your existing SpaceGrotesk style
-        Text(
-            "GRAMA",
-            style = MaterialTheme.typography.displayMedium.copy(
-                fontFamily = SpaceGroteskFamily,
-                fontWeight = FontWeight.Bold
-            ),
-            color = GramaTheme.colors.textPrimary
-        )
-        Text(
-            "WASTE TRACKER",
-            style = MaterialTheme.typography.titleMedium.copy(
-                letterSpacing = 4.sp
-            ),
-            color = AccentPrimary
+        // Branding — Full graphical logo
+        Image(
+            painter = painterResource(R.drawable.ic_logo),
+            contentDescription = "Grama Logo",
+            modifier = Modifier
+                .size(240.dp)
+                .padding(bottom = 32.dp)
         )
 
-        Spacer(Modifier.height(64.dp))
+        Spacer(Modifier.height(32.dp))
 
         when (val state = authState) {
             is AuthState.Loading -> {
