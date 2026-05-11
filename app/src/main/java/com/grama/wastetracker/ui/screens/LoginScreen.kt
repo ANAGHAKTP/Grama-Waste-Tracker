@@ -78,32 +78,14 @@ fun LoginScreen(
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(bottom = 48.dp)
+                    modifier = Modifier.padding(bottom = 32.dp)
                 ) {
                     Image(
-                        painter = painterResource(R.drawable.ic_logo),
+                        painter = painterResource(R.drawable.ic_login_logo),
                         contentDescription = "Grama Logo",
                         modifier = Modifier
-                            .size(100.dp)
-                            .padding(bottom = 16.dp)
-                    )
-                    
-                    Text(
-                        text = "Grama Waste Tracker",
-                        style = MaterialTheme.typography.displaySmall,
-                        color = GramaTheme.colors.textPrimary,
-                        textAlign = TextAlign.Center,
-                        fontWeight = FontWeight.Bold
-                    )
-                    
-                    Spacer(Modifier.height(8.dp))
-                    
-                    Text(
-                        text = "Clean Village • Green Future",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = GramaTheme.colors.textTertiary,
-                        textAlign = TextAlign.Center,
-                        letterSpacing = 2.sp
+                            .fillMaxWidth(0.8f)
+                            .aspectRatio(1f)
                     )
                 }
             }

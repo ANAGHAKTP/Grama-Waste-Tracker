@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -22,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -74,6 +76,11 @@ fun DashboardScreen(
             verticalAlignment = Alignment.Top
         ) {
             Column {
+                Image(
+                    painter = painterResource(com.grama.wastetracker.R.drawable.ic_logo),
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp).padding(bottom = 8.dp)
+                )
                 Text(
                     text = "UNIT IDENTIFIER",
                     style = MaterialTheme.typography.labelLarge.copy(
