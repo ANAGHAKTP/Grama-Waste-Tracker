@@ -1,10 +1,13 @@
 package com.grama.wastetracker.viewmodel
 
+import android.app.Activity
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.PhoneAuthCredential
+import com.google.firebase.auth.PhoneAuthProvider
 import com.grama.wastetracker.BuildConfig
 import com.grama.wastetracker.data.model.UserProfile
 import com.grama.wastetracker.data.repository.AuthRepository
@@ -16,6 +19,7 @@ import kotlinx.coroutines.launch
 sealed class AuthState {
     object Idle : AuthState()
     object Loading : AuthState()
+    object OtpSent : AuthState()
     data class Success(val user: FirebaseUser, val profile: UserProfile) : AuthState()
     data class Error(val message: String) : AuthState()
 }
@@ -26,6 +30,9 @@ class AuthViewModel(
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
+
+    private var verificationId: String? = null
+    private var resendToken: PhoneAuthProvider.ForceResendingToken? = null
 
     init {
         checkExistingSession()
@@ -64,6 +71,56 @@ class AuthViewModel(
                     _authState.value = AuthState.Error(error.message ?: "Sign-in failed")
                 }
         }
+    }
+
+    fun sendOtp(phoneNumber: String, activity: Activity) {
+        _authState.value = AuthState.Loading
+        authRepository.verifyPhoneNumber(
+            phoneNumber = phoneNumber,
+            activity = activity,
+            onCodeSent = { id, token ->
+                verificationId = id
+                resendToken = token
+                _authState.value = AuthState.OtpSent
+            },
+            onVerificationCompleted = { credential ->
+                signInWithPhoneCredential(credential)
+            },
+            onVerificationFailed = { e ->
+                _authState.value = AuthState.Error(e.message ?: "Verification failed")
+            }
+        )
+    }
+
+    fun verifyOtp(otp: String) {
+        val id = verificationId ?: run {
+            _authState.value = AuthState.Error("Verification ID is missing")
+            return
+        }
+        val credential = PhoneAuthProvider.getCredential(id, otp)
+        signInWithPhoneCredential(credential)
+    }
+
+    private fun signInWithPhoneCredential(credential: PhoneAuthCredential) {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            authRepository.signInWithPhoneCredential(credential)
+                .onSuccess { profile ->
+                    val user = authRepository.getCurrentUser()
+                    if (user != null) {
+                        _authState.value = AuthState.Success(user, profile)
+                    } else {
+                        _authState.value = AuthState.Error("Failed to retrieve current user")
+                    }
+                }
+                .onFailure { error ->
+                    _authState.value = AuthState.Error(error.message ?: "Phone sign-in failed")
+                }
+        }
+    }
+
+    fun resetToIdle() {
+        _authState.value = AuthState.Idle
     }
 
     fun signOut() {

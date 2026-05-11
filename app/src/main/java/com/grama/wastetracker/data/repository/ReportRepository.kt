@@ -13,6 +13,9 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import java.time.Instant
 
+/**
+ * Repository for Incident Report CRUD operations.
+ */
 class ReportRepository(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance(),
     private val storage: FirebaseStorage = FirebaseStorage.getInstance(),
@@ -39,12 +42,13 @@ class ReportRepository(
         description: String,
         aiAnalysis: String?,
         location: LatLng?,
-        type: String,
-        issueType: String
+        type: String = "general",
+        issueType: String = ""
     ) {
         val uid = auth.currentUser?.uid ?: "anonymous"
-        var photoUrl: String? = null
 
+        // Upload image if present
+        var photoUrl: String? = null
         imageUri?.let {
             if (it != Uri.EMPTY) {
                 val timestamp = System.currentTimeMillis()

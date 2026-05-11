@@ -9,6 +9,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class MapState(
@@ -19,7 +20,8 @@ data class MapState(
     val vehicleRotation: Float = 0f,
     val eta: Int = 0,
     val distanceKm: Double = 0.0,
-    val isLoading: Boolean = true, // Force loading until real GPS lock
+    val isLoading: Boolean = true,
+    val isArrived: Boolean = false,
     val routePoints: List<LatLng> = emptyList()
 )
 
@@ -31,75 +33,70 @@ class MapViewModel : ViewModel() {
     private var simulationJob: Job? = null
 
     /**
-     * Syncs the simulation with the user's actual location.
-     * This moves the mock truck to your real area.
+     * Resets simulation and starts moving toward the user's real area.
      */
     fun syncSimulationWithUser(userLocation: LatLng) {
-        // Only sync if we haven't found the user yet or they moved significantly
-        val currentLat = _state.value.userLat
-        val currentLng = _state.value.userLng
-        
-        if (currentLat != null && currentLng != null) {
-            val dist = FloatArray(1)
-            Location.distanceBetween(currentLat, currentLng, userLocation.latitude, userLocation.longitude, dist)
-            if (dist[0] < 50) return // Stay on current track if movement is minor
-        }
+        if (_state.value.userLat != null) return 
 
         simulationJob?.cancel()
         
-        // Place the mock truck in your neighborhood (~500m away)
-        val startLat = userLocation.latitude - 0.003
-        val startLng = userLocation.longitude - 0.002
+        // Spawn truck ~600m away from user
+        val startLat = userLocation.latitude - 0.004
+        val startLng = userLocation.longitude - 0.003
         
-        _state.value = _state.value.copy(
+        _state.update { it.copy(
             userLat = userLocation.latitude,
             userLng = userLocation.longitude,
             vehicleLat = startLat,
             vehicleLng = startLng,
             isLoading = false,
-            routePoints = listOf(
-                LatLng(startLat, startLng),
-                LatLng(userLocation.latitude, userLocation.longitude)
-            )
-        )
+            routePoints = listOf(LatLng(startLat, startLng), userLocation)
+        )}
         
-        updateLogistics(startLat, startLng, userLocation.latitude, userLocation.longitude)
         startMoving()
     }
 
     private fun startMoving() {
         simulationJob = viewModelScope.launch {
             while (true) {
-                delay(4_000)
-                _state.value = _state.value.let { current ->
-                    val uLat = current.userLat ?: return@let current
-                    val uLng = current.userLng ?: return@let current
+                delay(5000) // Heartbeat every 5 seconds for stability
+                
+                var arrived = false
+                _state.update { current ->
+                    val uLat = current.userLat ?: return@update current
+                    val uLng = current.userLng ?: return@update current
                     
-                    // Truck moves slowly toward your real location
-                    val nextLat = current.vehicleLat + 0.0001
-                    val nextLng = current.vehicleLng + 0.00008
+                    val distResults = FloatArray(1)
+                    Location.distanceBetween(current.vehicleLat, current.vehicleLng, uLat, uLng, distResults)
+                    val distanceMeters = distResults[0]
+
+                    if (distanceMeters < 15) {
+                        arrived = true
+                        return@update current.copy(isArrived = true, distanceKm = 0.0, eta = 0)
+                    }
+
+                    // Move truck closer to user
+                    val nextLat = current.vehicleLat + (uLat - current.vehicleLat) * 0.1
+                    val nextLng = current.vehicleLng + (uLng - current.vehicleLng) * 0.1
                     
-                    updateLogistics(nextLat, nextLng, uLat, uLng)
+                    // Calculate bearing (rotation)
+                    val startLoc = Location("").apply { latitude = current.vehicleLat; longitude = current.vehicleLng }
+                    val endLoc = Location("").apply { latitude = nextLat; longitude = nextLng }
+                    val bearing = startLoc.bearingTo(endLoc)
                     
+                    val distanceKm = distanceMeters / 1000.0
+                    val eta = (distanceKm / 15.0 * 60).toInt().coerceAtLeast(1)
+
                     current.copy(
                         vehicleLat = nextLat,
                         vehicleLng = nextLng,
-                        vehicleRotation = 40f
+                        vehicleRotation = bearing,
+                        distanceKm = distanceKm,
+                        eta = eta
                     )
                 }
+                if (arrived) break
             }
         }
-    }
-
-    private fun updateLogistics(vLat: Double, vLng: Double, uLat: Double, uLng: Double) {
-        val results = FloatArray(1)
-        Location.distanceBetween(vLat, vLng, uLat, uLng, results)
-        val distanceKm = results[0] / 1000.0
-        val eta = (distanceKm / 15.0 * 60).toInt().coerceAtLeast(1)
-        
-        _state.value = _state.value.copy(
-            distanceKm = distanceKm,
-            eta = eta
-        )
     }
 }

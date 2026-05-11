@@ -1,5 +1,6 @@
 package com.grama.wastetracker.data.repository
 
+import android.app.Activity
 import android.content.Context
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
@@ -7,14 +8,14 @@ import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialException
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.FirebaseException
+import com.google.firebase.auth.*
 import com.google.firebase.firestore.FirebaseFirestore
 import com.grama.wastetracker.data.model.UserProfile
 import com.grama.wastetracker.data.model.UserRole
 import kotlinx.coroutines.tasks.await
 import java.time.Instant
+import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -69,6 +70,52 @@ class AuthRepository(
         }
         return Result.failure(Exception("Invalid credential type"))
     }
+
+    // --- Phone Auth Methods ---
+
+    fun verifyPhoneNumber(
+        phoneNumber: String,
+        activity: Activity,
+        onCodeSent: (String, PhoneAuthProvider.ForceResendingToken) -> Unit,
+        onVerificationCompleted: (PhoneAuthCredential) -> Unit,
+        onVerificationFailed: (FirebaseException) -> Unit
+    ) {
+        val options = PhoneAuthOptions.newBuilder(auth)
+            .setPhoneNumber(phoneNumber)
+            .setTimeout(60L, TimeUnit.SECONDS)
+            .setActivity(activity)
+            .setCallbacks(object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+                override fun onVerificationCompleted(credential: PhoneAuthCredential) {
+                    onVerificationCompleted(credential)
+                }
+
+                override fun onVerificationFailed(e: FirebaseException) {
+                    onVerificationFailed(e)
+                }
+
+                override fun onCodeSent(
+                    verificationId: String,
+                    token: PhoneAuthProvider.ForceResendingToken
+                ) {
+                    onCodeSent(verificationId, token)
+                }
+            })
+            .build()
+        PhoneAuthProvider.verifyPhoneNumber(options)
+    }
+
+    suspend fun signInWithPhoneCredential(credential: PhoneAuthCredential): Result<UserProfile> {
+        return try {
+            val authResult = auth.signInWithCredential(credential).await()
+            val user = authResult.user ?: throw Exception("Sign-in succeeded but user is null")
+            val profile = getOrCreateProfile(user)
+            Result.success(profile)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // --- Profile Management ---
 
     suspend fun getOrCreateProfile(user: FirebaseUser): UserProfile {
         val docRef = db.collection("users").document(user.uid)
