@@ -28,16 +28,19 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.grama.wastetracker.R
 import com.grama.wastetracker.ui.theme.AccentError
 import com.grama.wastetracker.ui.theme.AccentPrimary
+import com.grama.wastetracker.ui.theme.AccentSecondary
 import com.grama.wastetracker.ui.theme.GramaTheme
 import com.grama.wastetracker.viewmodel.AuthState
 import com.grama.wastetracker.viewmodel.AuthViewModel
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 @Composable
 fun LoginScreen(
     onAuthSuccess: () -> Unit
 ) {
     val context = LocalContext.current
-    val activity = context as Activity
+    val activity = context as? Activity
     val viewModel: AuthViewModel = viewModel(
         factory = AuthViewModel.factory(context)
     )
@@ -62,36 +65,79 @@ fun LoginScreen(
                 Brush.verticalGradient(
                     colors = listOf(
                         Color(0xFF0F1419),
-                        Color(0xFF1A2332),
-                        AccentPrimary.copy(alpha = 0.2f)
+                        Color(0xFF141C24),
+                        Color(0xFF1A2332)
                     )
                 )
             )
     ) {
+        // Decorative background elements
+        Box(
+            modifier = Modifier
+                .size(400.dp)
+                .offset(x = (-150).dp, y = (-100).dp)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            AccentPrimary.copy(alpha = 0.15f),
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
+
+        Box(
+            modifier = Modifier
+                .size(300.dp)
+                .align(Alignment.BottomEnd)
+                .offset(x = 100.dp, y = 100.dp)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            AccentSecondary.copy(alpha = 0.1f),
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 32.dp),
+                .padding(horizontal = 24.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             // Branding Section
             AnimatedVisibility(
                 visible = visible,
-                enter = fadeIn(tween(1200)) + slideInVertically(tween(1200)) { -40 }
+                enter = fadeIn(tween(1000)) + expandVertically(tween(1000, easing = EaseOutQuart))
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Image(
-                        painter = painterResource(R.drawable.ic_logo),
-                        contentDescription = "Grama Logo",
-                        modifier = Modifier
-                            .size(120.dp)
-                            .padding(bottom = 16.dp)
-                    )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(bottom = 48.dp)
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(24.dp),
+                        color = Color.White.copy(alpha = 0.05f),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
+                        modifier = Modifier.size(100.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.ic_logo),
+                            contentDescription = "Grama Logo",
+                            modifier = Modifier
+                                .padding(20.dp)
+                                .fillMaxSize()
+                        )
+                    }
+                    
+                    Spacer(Modifier.height(24.dp))
                     
                     Text(
                         text = "Grama Waste Tracker",
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = MaterialTheme.typography.displaySmall,
                         color = Color.White,
                         textAlign = TextAlign.Center,
                         fontWeight = FontWeight.Bold
@@ -100,122 +146,221 @@ fun LoginScreen(
                     Spacer(Modifier.height(8.dp))
                     
                     Text(
-                        text = "Clean Village. Green Future.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = GramaTheme.colors.accentSecondary,
+                        text = "Clean Village • Green Future",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White.copy(alpha = 0.6f),
                         textAlign = TextAlign.Center,
-                        letterSpacing = 1.sp
+                        letterSpacing = 2.sp
                     )
                 }
             }
 
-            // Phone Auth UI based on current AuthState
-            AnimatedContent(
-                targetState = authState,
-                label = "auth_state_transition"
-            ) { state ->
+            // Authentication Card
+            Surface(
+                shape = RoundedCornerShape(28.dp),
+                color = Color.White.copy(alpha = 0.03f),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp)
+            ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(top = 48.dp),
+                    modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    when (state) {
-                        is AuthState.Loading -> {
-                            CircularProgressIndicator(color = AccentPrimary)
+                    AnimatedContent(
+                        targetState = authState,
+                        label = "auth_state_transition",
+                        transitionSpec = {
+                            fadeIn(tween(400)) togetherWith fadeOut(tween(400))
                         }
-                        
-                        is AuthState.OtpSent -> {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    "Enter the code sent to +91$phoneNumber",
-                                    color = Color.White,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    textAlign = TextAlign.Center
-                                )
-                                Spacer(Modifier.height(16.dp))
-                                OutlinedTextField(
-                                    value = otpCode,
-                                    onValueChange = { if (it.length <= 6) otpCode = it },
-                                    label = { Text("OTP Code", color = Color.Gray) },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedTextColor = Color.White,
-                                        unfocusedTextColor = Color.White,
-                                        focusedBorderColor = AccentPrimary,
-                                        unfocusedBorderColor = Color.Gray
-                                    )
-                                )
-                                Spacer(Modifier.height(16.dp))
-                                Button(
-                                    onClick = { viewModel.verifyOtp(otpCode) },
-                                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary),
-                                    shape = RoundedCornerShape(12.dp)
+                    ) { state ->
+                        when (state) {
+                            is AuthState.Loading -> {
+                                Box(
+                                    modifier = Modifier.height(200.dp).fillMaxWidth(),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    Text("Verify & Login")
-                                }
-                                TextButton(onClick = { viewModel.resetToIdle() }) {
-                                    Text("Change Number", color = Color.White.copy(alpha = 0.7f))
+                                    CircularProgressIndicator(
+                                        color = AccentPrimary,
+                                        strokeWidth = 3.dp
+                                    )
                                 }
                             }
-                        }
-
-                        else -> {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                if (state is AuthState.Error) {
+                            
+                            is AuthState.OtpSent -> {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
-                                        state.message,
-                                        color = AccentError,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        modifier = Modifier.padding(bottom = 16.dp)
+                                        "Verification",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        color = Color.White
                                     )
-                                }
-
-                                // Phone Login
-                                OutlinedTextField(
-                                    value = phoneNumber,
-                                    onValueChange = { phoneNumber = it },
-                                    label = { Text("Phone Number", color = Color.Gray) },
-                                    prefix = { Text("+91 ", color = Color.White) },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedTextColor = Color.White,
-                                        unfocusedTextColor = Color.White,
-                                        focusedBorderColor = AccentPrimary,
-                                        unfocusedBorderColor = Color.Gray
+                                    Text(
+                                        "Enter the 6-digit code sent to +91 $phoneNumber",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color.White.copy(alpha = 0.6f),
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.padding(top = 8.dp, bottom = 24.dp)
                                     )
-                                )
-                                Spacer(Modifier.height(16.dp))
-                                Button(
-                                    onClick = { viewModel.sendOtp("+91$phoneNumber", activity) },
-                                    enabled = phoneNumber.length >= 10,
-                                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Text("Send OTP")
+                                    
+                                    OutlinedTextField(
+                                        value = otpCode,
+                                        onValueChange = { if (it.length <= 6) otpCode = it },
+                                        placeholder = { Text("000000", color = Color.White.copy(alpha = 0.3f)) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedTextColor = Color.White,
+                                            unfocusedTextColor = Color.White,
+                                            focusedBorderColor = AccentPrimary,
+                                            unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
+                                            cursorColor = AccentPrimary
+                                        ),
+                                        singleLine = true,
+                                        textAlign = TextAlign.Center,
+                                        textStyle = MaterialTheme.typography.headlineMedium.copy(letterSpacing = 4.sp)
+                                    )
+                                    
+                                    Spacer(Modifier.height(24.dp))
+                                    
+                                    Button(
+                                        onClick = { viewModel.verifyOtp(otpCode) },
+                                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary),
+                                        shape = RoundedCornerShape(16.dp),
+                                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                                    ) {
+                                        Text("Verify OTP", fontWeight = FontWeight.Bold)
+                                    }
+                                    
+                                    TextButton(
+                                        onClick = { viewModel.resetToIdle() },
+                                        modifier = Modifier.padding(top = 8.dp)
+                                    ) {
+                                        Text("Change Phone Number", color = AccentSecondary)
+                                    }
                                 }
+                            }
 
-                                Spacer(Modifier.height(24.dp))
-                                Text("OR", color = Color.Gray, style = MaterialTheme.typography.labelMedium)
-                                Spacer(Modifier.height(24.dp))
+                            else -> {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        "Welcome Back",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        color = Color.White
+                                    )
+                                    Text(
+                                        "Sign in to continue tracking waste collection",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color.White.copy(alpha = 0.6f),
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.padding(top = 8.dp, bottom = 24.dp)
+                                    )
 
-                                GoogleSignInButton(onClick = { viewModel.signInWithGoogle(context) })
+                                    if (state is AuthState.Error) {
+                                        Surface(
+                                            color = AccentError.copy(alpha = 0.1f),
+                                            shape = RoundedCornerShape(12.dp),
+                                            border = BorderStroke(1.dp, AccentError.copy(alpha = 0.2f)),
+                                            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                                        ) {
+                                            Text(
+                                                state.message,
+                                                color = AccentError,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                modifier = Modifier.padding(12.dp),
+                                                textAlign = TextAlign.Center
+                                            )
+                                        }
+                                    }
+
+                                    OutlinedTextField(
+                                        value = phoneNumber,
+                                        onValueChange = { if (it.length <= 10) phoneNumber = it },
+                                        label = { Text("Phone Number") },
+                                        prefix = { Text("+91 ", color = Color.White.copy(alpha = 0.7f)) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedTextColor = Color.White,
+                                            unfocusedTextColor = Color.White,
+                                            focusedBorderColor = AccentPrimary,
+                                            unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
+                                            focusedLabelColor = AccentPrimary,
+                                            unfocusedLabelColor = Color.White.copy(alpha = 0.5f)
+                                        ),
+                                        singleLine = true
+                                    )
+                                    
+                                    Spacer(Modifier.height(16.dp))
+                                    
+                                    Button(
+                                        onClick = { 
+                                            activity?.let { viewModel.sendOtp("+91$phoneNumber", it) }
+                                        },
+                                        enabled = phoneNumber.length == 10,
+                                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = AccentPrimary,
+                                            disabledContainerColor = AccentPrimary.copy(alpha = 0.3f)
+                                        ),
+                                        shape = RoundedCornerShape(16.dp)
+                                    ) {
+                                        Text("Continue with Phone", fontWeight = FontWeight.Bold)
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .padding(vertical = 24.dp)
+                                            .fillMaxWidth(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
+                                        Surface(
+                                            color = Color(0xFF141C24),
+                                            modifier = Modifier.padding(horizontal = 16.dp)
+                                        ) {
+                                            Text(
+                                                "OR",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = Color.White.copy(alpha = 0.3f),
+                                                modifier = Modifier.padding(horizontal = 8.dp)
+                                            )
+                                        }
+                                    }
+
+                                    GoogleSignInButton(onClick = { viewModel.signInWithGoogle(context) })
+                                }
                             }
                         }
                     }
                 }
             }
 
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(24.dp))
             
+            Text(
+                text = "By continuing, you agree to our Terms and Privacy Policy",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.3f),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(bottom = 32.dp)
+            )
+        }
+        
+        // Footer branding
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 24.dp)
+        ) {
             Text(
                 text = "© 2026 GRAMA-WASTE SYSTEMS",
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.5f),
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(bottom = 16.dp)
+                color = Color.White.copy(alpha = 0.4f),
+                letterSpacing = 1.sp
             )
         }
     }
@@ -225,11 +370,11 @@ fun LoginScreen(
 fun GoogleSignInButton(onClick: () -> Unit) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         color = Color.White,
         modifier = Modifier
             .fillMaxWidth()
-            .height(50.dp)
+            .height(56.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
@@ -240,15 +385,16 @@ fun GoogleSignInButton(onClick: () -> Unit) {
                 painter = painterResource(R.drawable.ic_google),
                 contentDescription = null,
                 tint = Color.Unspecified,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(24.dp)
             )
             Spacer(Modifier.width(12.dp))
             Text(
-                "Continue with Google",
+                "Sign in with Google",
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.Black,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Bold
             )
         }
     }
 }
+
