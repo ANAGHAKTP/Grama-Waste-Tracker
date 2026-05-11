@@ -61,46 +61,8 @@ fun LoginScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF0F1419),
-                        Color(0xFF141C24),
-                        Color(0xFF1A2332)
-                    )
-                )
-            )
+            .background(GramaTheme.colors.bgPrimary)
     ) {
-        // Decorative background elements
-        Box(
-            modifier = Modifier
-                .size(400.dp)
-                .offset(x = (-150).dp, y = (-100).dp)
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            AccentPrimary.copy(alpha = 0.15f),
-                            Color.Transparent
-                        )
-                    )
-                )
-        )
-
-        Box(
-            modifier = Modifier
-                .size(300.dp)
-                .align(Alignment.BottomEnd)
-                .offset(x = 100.dp, y = 100.dp)
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            AccentSecondary.copy(alpha = 0.1f),
-                            Color.Transparent
-                        )
-                    )
-                )
-        )
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -112,33 +74,24 @@ fun LoginScreen(
             // Branding Section
             AnimatedVisibility(
                 visible = visible,
-                enter = fadeIn(tween(1000)) + expandVertically(tween(1000, easing = EaseOutQuart))
+                enter = fadeIn(tween(1000)) + expandVertically(tween(1000))
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.padding(bottom = 48.dp)
                 ) {
-                    Surface(
-                        shape = RoundedCornerShape(24.dp),
-                        color = Color.White.copy(alpha = 0.05f),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
-                        modifier = Modifier.size(100.dp)
-                    ) {
-                        Image(
-                            painter = painterResource(R.drawable.ic_logo),
-                            contentDescription = "Grama Logo",
-                            modifier = Modifier
-                                .padding(20.dp)
-                                .fillMaxSize()
-                        )
-                    }
-                    
-                    Spacer(Modifier.height(24.dp))
+                    Image(
+                        painter = painterResource(R.drawable.ic_logo),
+                        contentDescription = "Grama Logo",
+                        modifier = Modifier
+                            .size(100.dp)
+                            .padding(bottom = 16.dp)
+                    )
                     
                     Text(
                         text = "Grama Waste Tracker",
                         style = MaterialTheme.typography.displaySmall,
-                        color = Color.White,
+                        color = GramaTheme.colors.textPrimary,
                         textAlign = TextAlign.Center,
                         fontWeight = FontWeight.Bold
                     )
@@ -148,7 +101,7 @@ fun LoginScreen(
                     Text(
                         text = "Clean Village • Green Future",
                         style = MaterialTheme.typography.labelLarge,
-                        color = Color.White.copy(alpha = 0.6f),
+                        color = GramaTheme.colors.textTertiary,
                         textAlign = TextAlign.Center,
                         letterSpacing = 2.sp
                     )
@@ -157,9 +110,10 @@ fun LoginScreen(
 
             // Authentication Card
             Surface(
-                shape = RoundedCornerShape(28.dp),
-                color = Color.White.copy(alpha = 0.03f),
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
+                shape = RoundedCornerShape(24.dp),
+                color = GramaTheme.colors.bgSecondary,
+                border = BorderStroke(1.dp, GramaTheme.colors.borderDim),
+                shadowElevation = 2.dp,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 32.dp)
@@ -170,10 +124,7 @@ fun LoginScreen(
                 ) {
                     AnimatedContent(
                         targetState = authState,
-                        label = "auth_state_transition",
-                        transitionSpec = {
-                            fadeIn(tween(400)) togetherWith fadeOut(tween(400))
-                        }
+                        label = "auth_state_transition"
                     ) { state ->
                         when (state) {
                             is AuthState.Loading -> {
@@ -181,10 +132,7 @@ fun LoginScreen(
                                     modifier = Modifier.height(200.dp).fillMaxWidth(),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    CircularProgressIndicator(
-                                        color = AccentPrimary,
-                                        strokeWidth = 3.dp
-                                    )
+                                    CircularProgressIndicator(color = AccentPrimary)
                                 }
                             }
                             
@@ -193,12 +141,12 @@ fun LoginScreen(
                                     Text(
                                         "Verification",
                                         style = MaterialTheme.typography.titleLarge,
-                                        color = Color.White
+                                        color = GramaTheme.colors.textPrimary
                                     )
                                     Text(
-                                        "Enter the 6-digit code sent to +91 $phoneNumber",
+                                        "Enter the code sent to +91 $phoneNumber",
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = Color.White.copy(alpha = 0.6f),
+                                        color = GramaTheme.colors.textSecondary,
                                         textAlign = TextAlign.Center,
                                         modifier = Modifier.padding(top = 8.dp, bottom = 24.dp)
                                     )
@@ -206,20 +154,17 @@ fun LoginScreen(
                                     OutlinedTextField(
                                         value = otpCode,
                                         onValueChange = { if (it.length <= 6) otpCode = it },
-                                        placeholder = { Text("000000", color = Color.White.copy(alpha = 0.3f)) },
+                                        placeholder = { Text("000000") },
                                         modifier = Modifier.fillMaxWidth(),
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        shape = RoundedCornerShape(16.dp),
+                                        shape = RoundedCornerShape(12.dp),
                                         colors = OutlinedTextFieldDefaults.colors(
-                                            focusedTextColor = Color.White,
-                                            unfocusedTextColor = Color.White,
+                                            focusedTextColor = GramaTheme.colors.textPrimary,
+                                            unfocusedTextColor = GramaTheme.colors.textPrimary,
                                             focusedBorderColor = AccentPrimary,
-                                            unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
-                                            cursorColor = AccentPrimary
+                                            unfocusedBorderColor = GramaTheme.colors.borderDim
                                         ),
-                                        singleLine = true,
-                                        textAlign = TextAlign.Center,
-                                        textStyle = MaterialTheme.typography.headlineMedium.copy(letterSpacing = 4.sp)
+                                        singleLine = true
                                     )
                                     
                                     Spacer(Modifier.height(24.dp))
@@ -228,17 +173,13 @@ fun LoginScreen(
                                         onClick = { viewModel.verifyOtp(otpCode) },
                                         modifier = Modifier.fillMaxWidth().height(56.dp),
                                         colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary),
-                                        shape = RoundedCornerShape(16.dp),
-                                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                                        shape = RoundedCornerShape(12.dp)
                                     ) {
                                         Text("Verify OTP", fontWeight = FontWeight.Bold)
                                     }
                                     
-                                    TextButton(
-                                        onClick = { viewModel.resetToIdle() },
-                                        modifier = Modifier.padding(top = 8.dp)
-                                    ) {
-                                        Text("Change Phone Number", color = AccentSecondary)
+                                    TextButton(onClick = { viewModel.resetToIdle() }) {
+                                        Text("Change Number", color = AccentSecondary)
                                     }
                                 }
                             }
@@ -246,50 +187,40 @@ fun LoginScreen(
                             else -> {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
-                                        "Welcome Back",
+                                        "Welcome",
                                         style = MaterialTheme.typography.titleLarge,
-                                        color = Color.White
+                                        color = GramaTheme.colors.textPrimary
                                     )
                                     Text(
-                                        "Sign in to continue tracking waste collection",
+                                        "Sign in to access your dashboard",
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = Color.White.copy(alpha = 0.6f),
+                                        color = GramaTheme.colors.textSecondary,
                                         textAlign = TextAlign.Center,
                                         modifier = Modifier.padding(top = 8.dp, bottom = 24.dp)
                                     )
 
                                     if (state is AuthState.Error) {
-                                        Surface(
-                                            color = AccentError.copy(alpha = 0.1f),
-                                            shape = RoundedCornerShape(12.dp),
-                                            border = BorderStroke(1.dp, AccentError.copy(alpha = 0.2f)),
-                                            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
-                                        ) {
-                                            Text(
-                                                state.message,
-                                                color = AccentError,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                modifier = Modifier.padding(12.dp),
-                                                textAlign = TextAlign.Center
-                                            )
-                                        }
+                                        Text(
+                                            state.message,
+                                            color = AccentError,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            modifier = Modifier.padding(bottom = 16.dp)
+                                        )
                                     }
 
                                     OutlinedTextField(
                                         value = phoneNumber,
                                         onValueChange = { if (it.length <= 10) phoneNumber = it },
                                         label = { Text("Phone Number") },
-                                        prefix = { Text("+91 ", color = Color.White.copy(alpha = 0.7f)) },
+                                        prefix = { Text("+91 ") },
                                         modifier = Modifier.fillMaxWidth(),
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                                        shape = RoundedCornerShape(16.dp),
+                                        shape = RoundedCornerShape(12.dp),
                                         colors = OutlinedTextFieldDefaults.colors(
-                                            focusedTextColor = Color.White,
-                                            unfocusedTextColor = Color.White,
+                                            focusedTextColor = GramaTheme.colors.textPrimary,
+                                            unfocusedTextColor = GramaTheme.colors.textPrimary,
                                             focusedBorderColor = AccentPrimary,
-                                            unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
-                                            focusedLabelColor = AccentPrimary,
-                                            unfocusedLabelColor = Color.White.copy(alpha = 0.5f)
+                                            unfocusedBorderColor = GramaTheme.colors.borderDim
                                         ),
                                         singleLine = true
                                     )
@@ -302,31 +233,25 @@ fun LoginScreen(
                                         },
                                         enabled = phoneNumber.length == 10,
                                         modifier = Modifier.fillMaxWidth().height(56.dp),
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = AccentPrimary,
-                                            disabledContainerColor = AccentPrimary.copy(alpha = 0.3f)
-                                        ),
-                                        shape = RoundedCornerShape(16.dp)
+                                        colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary),
+                                        shape = RoundedCornerShape(12.dp)
                                     ) {
-                                        Text("Continue with Phone", fontWeight = FontWeight.Bold)
+                                        Text("Get OTP", fontWeight = FontWeight.Bold)
                                     }
 
                                     Box(
-                                        modifier = Modifier
-                                            .padding(vertical = 24.dp)
-                                            .fillMaxWidth(),
+                                        modifier = Modifier.padding(vertical = 24.dp).fillMaxWidth(),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
+                                        HorizontalDivider(color = GramaTheme.colors.borderDim)
                                         Surface(
-                                            color = Color(0xFF141C24),
-                                            modifier = Modifier.padding(horizontal = 16.dp)
+                                            color = GramaTheme.colors.bgSecondary,
+                                            modifier = Modifier.padding(horizontal = 8.dp)
                                         ) {
                                             Text(
                                                 "OR",
                                                 style = MaterialTheme.typography.labelSmall,
-                                                color = Color.White.copy(alpha = 0.3f),
-                                                modifier = Modifier.padding(horizontal = 8.dp)
+                                                color = GramaTheme.colors.textTertiary
                                             )
                                         }
                                     }
@@ -338,31 +263,16 @@ fun LoginScreen(
                     }
                 }
             }
-
-            Spacer(Modifier.height(24.dp))
-            
-            Text(
-                text = "By continuing, you agree to our Terms and Privacy Policy",
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.3f),
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(bottom = 32.dp)
-            )
         }
         
-        // Footer branding
-        Box(
+        Text(
+            text = "© 2026 GRAMA-WASTE",
+            style = MaterialTheme.typography.labelSmall,
+            color = GramaTheme.colors.textTertiary,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 24.dp)
-        ) {
-            Text(
-                text = "© 2026 GRAMA-WASTE SYSTEMS",
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.4f),
-                letterSpacing = 1.sp
-            )
-        }
+        )
     }
 }
 
@@ -370,8 +280,9 @@ fun LoginScreen(
 fun GoogleSignInButton(onClick: () -> Unit) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
         color = Color.White,
+        border = BorderStroke(1.dp, GramaTheme.colors.borderDim),
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp)
@@ -397,4 +308,3 @@ fun GoogleSignInButton(onClick: () -> Unit) {
         }
     }
 }
-
