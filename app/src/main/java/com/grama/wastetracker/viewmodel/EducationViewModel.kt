@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 data class EducationState(
     val query: String = "",
@@ -33,8 +34,20 @@ class EducationViewModel(
 
         viewModelScope.launch {
             _state.value = _state.value.copy(searching = true, aiResult = null)
-            val result = geminiRepo.classifyWasteItem(q)
-            _state.value = _state.value.copy(searching = false, aiResult = result)
+            
+            // Set an 8-second timeout for the classification
+            val result = withTimeoutOrNull(8000) {
+                geminiRepo.classifyWasteItem(q)
+            }
+            
+            if (result == null) {
+                _state.value = _state.value.copy(
+                    searching = false, 
+                    aiResult = WasteClassification("Error", "Request timed out. Please check your internet.")
+                )
+            } else {
+                _state.value = _state.value.copy(searching = false, aiResult = result)
+            }
         }
     }
 

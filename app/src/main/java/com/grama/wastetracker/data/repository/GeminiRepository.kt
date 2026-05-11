@@ -1,16 +1,18 @@
 package com.grama.wastetracker.data.repository
 
 import android.graphics.Bitmap
+import android.util.Log
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.content
 import com.grama.wastetracker.BuildConfig
 import com.grama.wastetracker.data.model.WasteAnalysis
 import com.grama.wastetracker.data.model.WasteClassification
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 
 /**
  * Repository for Google Gemini AI interactions.
- * Mirrors all AI calls from Dashboard, ReportIssue, Education, and AdminDashboard.
+ * Handles AI calls for Dashboard tips, Image Analysis, Waste Classification, and Admin Summaries.
  */
 class GeminiRepository {
 
@@ -29,76 +31,62 @@ class GeminiRepository {
      */
     suspend fun getDailyInsight(): String {
         return try {
-            val response = textModel.generateContent(
-                "Generate a 1-sentence helpful tip for a rural village resident about waste management, composting, or recycling. Be encouraging and simple."
-            )
-            response.text ?: FALLBACK_INSIGHT
+            val response = withTimeoutOrNull(5000L) {
+                textModel.generateContent("Generate a 1-sentence helpful tip for a rural village resident about waste management. Be encouraging and simple.")
+            }
+            response?.text ?: FALLBACK_INSIGHT
         } catch (e: Exception) {
+            Log.e("GeminiRepo", "Insight error: ${e.message}")
             FALLBACK_INSIGHT
         }
     }
 
     /**
      * Analyze a waste image using multimodal (vision) capabilities.
-     * Returns structured analysis with type, action, and severity.
      */
     suspend fun analyzeWasteImage(bitmap: Bitmap): WasteAnalysis {
         return try {
-            val prompt = content {
-                image(bitmap)
-                text(
-                    """Analyze this image of a waste/garbage issue. 
-                    Classify the waste type and suggest prioritized actions.
-                    Return JSON: { "type": "...", "action": "...", "severity": "low" | "medium" | "high" }"""
-                )
-            }
+            val result = withTimeoutOrNull(15000L) {
+                val prompt = content {
+                    image(bitmap)
+                    text("Analyze this image of waste. Return JSON: { \"type\": \"...\", \"action\": \"...\", \"severity\": \"low\" | \"medium\" | \"high\" }")
+                }
+                visionModel.generateContent(prompt).text
+            } ?: throw Exception("Timeout")
 
-            val response = visionModel.generateContent(prompt)
-            val text = response.text ?: return WasteAnalysis()
-
-            // Parse JSON from response (may contain markdown code fences)
-            val jsonStr = text
-                .replace("```json", "")
-                .replace("```", "")
-                .trim()
-
+            val jsonStr = result.replace("```json", "").replace("```", "").trim()
             val json = JSONObject(jsonStr)
             WasteAnalysis(
                 type = json.optString("type", "Unknown"),
-                action = json.optString("action", "Dispose properly"),
+                action = json.optString("action", "Dispose per local guidelines"),
                 severity = json.optString("severity", "medium")
             )
         } catch (e: Exception) {
-            WasteAnalysis(type = "Unknown", action = "AI Analysis unavailable", severity = "medium")
+            Log.e("GeminiRepo", "Vision Error: ${e.message}")
+            WasteAnalysis(type = "Service Offline", action = "Please check your connection.", severity = "low")
         }
     }
 
     /**
      * Classify a waste item by name (text-based).
-     * Used in the Education screen's AI assistant.
      */
     suspend fun classifyWasteItem(itemName: String): WasteClassification {
         return try {
-            val response = textModel.generateContent(
-                """Classify which waste category this item belongs to: "$itemName". 
-                Categories: Wet Waste, Dry Waste, Hazardous, Sanitary, or E-Waste.
-                Provide the answer in JSON format: { "category": "...", "instruction": "..." } 
-                where instruction is a short (1 sentence) disposal rule."""
-            )
-            val text = response.text ?: return WasteClassification()
+            val result = withTimeoutOrNull(8000L) {
+                val response = textModel.generateContent(
+                    "Classify waste category for '$itemName'. Return JSON: { \"category\": \"...\", \"instruction\": \"...\" }"
+                )
+                response.text
+            } ?: throw Exception("Timeout")
 
-            val jsonStr = text
-                .replace("```json", "")
-                .replace("```", "")
-                .trim()
-
+            val jsonStr = result.replace("```json", "").replace("```", "").trim()
             val json = JSONObject(jsonStr)
             WasteClassification(
                 category = json.optString("category", "Unknown"),
-                instruction = json.optString("instruction", "Please consult local guidelines.")
+                instruction = json.optString("instruction", "Consult guidelines.")
             )
         } catch (e: Exception) {
-            WasteClassification(category = "Unknown", instruction = "Classification unavailable.")
+            WasteClassification("Unknown", "AI Service Unavailable")
         }
     }
 
@@ -108,14 +96,12 @@ class GeminiRepository {
     suspend fun generateExecutiveSummary(reportDescriptions: List<String>): String {
         return try {
             val reportList = reportDescriptions.joinToString("\n") { "- $it" }
-            val response = textModel.generateContent(
-                """Provide a high-level, executive summary for the Village Panchayat based on these reports:
-                $reportList
-                Format: 2 sentences max. Focused on status, primary waste issues, and recommendation for vehicle deployment."""
-            )
-            response.text ?: "No summary available."
+            val response = withTimeoutOrNull(12000L) {
+                textModel.generateContent("Provide a 2-sentence executive summary for the Village Panchayat based on these reports:\n$reportList")
+            }
+            response?.text ?: "No summary available."
         } catch (e: Exception) {
-            "Summary generation failed. Please try again."
+            "AI summary generation failed."
         }
     }
 

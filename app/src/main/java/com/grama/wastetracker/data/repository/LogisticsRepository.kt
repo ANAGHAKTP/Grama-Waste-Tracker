@@ -13,6 +13,9 @@ import java.time.Instant
 class LogisticsRepository(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
+    /**
+     * Observe the nearest active vehicle in real-time.
+     */
     fun observeActiveVehicle(): Flow<Vehicle?> = callbackFlow {
         val listener = db.collection("vehicles")
             .whereEqualTo("status", "active")
@@ -28,15 +31,24 @@ class LogisticsRepository(
         awaitClose { listener.remove() }
     }
 
+    /**
+     * Fetch the weekly collection schedules.
+     */
     suspend fun getSchedules(): List<Schedule> {
         return try {
             val snapshot = db.collection("schedules").get().await()
-            snapshot.documents.mapNotNull { it.toObject(Schedule::class.java)?.copy(id = it.id) }
+            // Map each document in the snapshot to a Schedule object
+            snapshot.documents.mapNotNull { doc -> 
+                doc.toObject(Schedule::class.java)?.copy(id = doc.id) 
+            }
         } catch (e: Exception) {
             emptyList()
         }
     }
 
+    /**
+     * Seed sample data for demonstration.
+     */
     suspend fun seedSampleData() {
         val schedules = listOf(
             Schedule(day = "MON", wasteType = "Dry Waste", time = "08:00"),

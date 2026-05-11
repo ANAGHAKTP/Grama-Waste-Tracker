@@ -33,16 +33,16 @@ class MapViewModel : ViewModel() {
     private var simulationJob: Job? = null
 
     /**
-     * Resets simulation and starts moving toward the user's real area.
+     * Synchronizes simulation with your real GPS location.
      */
     fun syncSimulationWithUser(userLocation: LatLng) {
         if (_state.value.userLat != null) return 
 
         simulationJob?.cancel()
         
-        // Spawn truck ~600m away from user
-        val startLat = userLocation.latitude - 0.004
-        val startLng = userLocation.longitude - 0.003
+        // Spawn truck roughly 500m away from your location
+        val startLat = userLocation.latitude - 0.003
+        val startLng = userLocation.longitude - 0.002
         
         _state.update { it.copy(
             userLat = userLocation.latitude,
@@ -59,7 +59,7 @@ class MapViewModel : ViewModel() {
     private fun startMoving() {
         simulationJob = viewModelScope.launch {
             while (true) {
-                delay(5000) // Heartbeat every 5 seconds for stability
+                delay(4000) // Update every 4 seconds for a stable, professional look
                 
                 var arrived = false
                 _state.update { current ->
@@ -70,16 +70,16 @@ class MapViewModel : ViewModel() {
                     Location.distanceBetween(current.vehicleLat, current.vehicleLng, uLat, uLng, distResults)
                     val distanceMeters = distResults[0]
 
-                    if (distanceMeters < 15) {
+                    if (distanceMeters < 15) { 
                         arrived = true
                         return@update current.copy(isArrived = true, distanceKm = 0.0, eta = 0)
                     }
 
-                    // Move truck closer to user
+                    // Move truck closer to your home
                     val nextLat = current.vehicleLat + (uLat - current.vehicleLat) * 0.1
                     val nextLng = current.vehicleLng + (uLng - current.vehicleLng) * 0.1
                     
-                    // Calculate bearing (rotation)
+                    // Calculate bearing so the truck arrow points exactly where it's going
                     val startLoc = Location("").apply { latitude = current.vehicleLat; longitude = current.vehicleLng }
                     val endLoc = Location("").apply { latitude = nextLat; longitude = nextLng }
                     val bearing = startLoc.bearingTo(endLoc)

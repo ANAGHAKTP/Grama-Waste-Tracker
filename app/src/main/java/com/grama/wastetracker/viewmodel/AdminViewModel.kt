@@ -9,8 +9,8 @@ import com.grama.wastetracker.data.repository.ReportRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 data class AdminState(
     val reports: List<IncidentReport> = emptyList(),
@@ -31,8 +31,7 @@ class AdminViewModel(
     val state: StateFlow<AdminState> = _state.asStateFlow()
 
     init {
-        observeReports()
-        observeActiveVehicles()
+        refresh()
     }
 
     fun refresh() {
@@ -40,28 +39,16 @@ class AdminViewModel(
         observeActiveVehicles()
     }
 
-    fun seedData() {
-        viewModelScope.launch {
-            try {
-                _state.update { it.copy(loading = true) }
-                logisticsRepo.seedSampleData()
-                _state.update { it.copy(loading = false, error = "Sample data seeded!") }
-            } catch (e: Exception) {
-                _state.update { it.copy(loading = false, error = "Seed failed: ${e.message}") }
-            }
-        }
-    }
-
     private fun observeActiveVehicles() {
         viewModelScope.launch {
             try {
                 logisticsRepo.observeActiveVehicle().collect { vehicle ->
-                    _state.update { state -> 
-                        state.copy(activeVehicleCount = if (vehicle != null) 1 else 0, error = null) 
-                    }
+                    _state.value = _state.value.copy(
+                        activeVehicleCount = if (vehicle != null) 1 else 0
+                    )
                 }
             } catch (e: Exception) {
-                _state.update { it.copy(error = "Logistics feed offline") }
+                // Background tracking silent fail
             }
         }
     }
@@ -77,24 +64,29 @@ class AdminViewModel(
                 }
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
-                    loading = false,
-                    error = e.message
+                    loading = false, 
+                    error = "Database link interrupted"
                 )
             }
         }
     }
 
     fun generateSummary() {
-        val reports = _state.value.reports
-        if (reports.isEmpty() || _state.value.summarizing) return
+        val currentReports = _state.value.reports
+        if (currentReports.isEmpty() || _state.value.summarizing) return
 
         viewModelScope.launch {
-            _state.value = _state.value.copy(summarizing = true)
-            val descriptions = reports.map { "${it.description} (${it.status})" }
-            val summary = geminiRepo.generateExecutiveSummary(descriptions)
+            _state.value = _state.value.copy(summarizing = true, error = null)
+            val descriptions = currentReports.map { "${it.description} (${it.status})" }
+            
+            // Fixed: Explicit String type and Long timeout literal
+            val summary: String? = withTimeoutOrNull<String>(15000L) {
+                geminiRepo.generateExecutiveSummary(descriptions)
+            }
+            
             _state.value = _state.value.copy(
                 summarizing = false,
-                aiSummary = summary
+                aiSummary = summary ?: "AI Engine is currently unresponsive. Check connection."
             )
         }
     }
@@ -104,7 +96,7 @@ class AdminViewModel(
             try {
                 reportRepo.resolveReport(reportId)
             } catch (e: Exception) {
-                _state.value = _state.value.copy(error = e.message)
+                _state.value = _state.value.copy(error = "Resolution failed: ${e.message}")
             }
         }
     }

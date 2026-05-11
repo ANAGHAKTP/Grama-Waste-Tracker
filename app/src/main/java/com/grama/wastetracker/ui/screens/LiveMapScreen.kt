@@ -68,7 +68,7 @@ fun LiveMapScreen(
         onResult = { isGranted -> hasLocationPermission = isGranted }
     )
 
-    // Force fetch current location to center map
+    // Force fetch fresh user coordinates
     LaunchedEffect(hasLocationPermission) {
         if (hasLocationPermission) {
             val cts = CancellationTokenSource()
@@ -83,11 +83,7 @@ fun LiveMapScreen(
         }
     }
 
-    // Stable derived states
-    val vehiclePosition = remember(state.vehicleLat, state.vehicleLng) {
-        LatLng(state.vehicleLat, state.vehicleLng)
-    }
-    
+    val vehiclePosition = LatLng(state.vehicleLat, state.vehicleLng)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(vehiclePosition, 16f)
     }
@@ -122,15 +118,7 @@ fun LiveMapScreen(
         )
     }
 
-    val mapProperties = remember(mapStyle, hasLocationPermission) {
-        MapProperties(mapStyleOptions = mapStyle, isMyLocationEnabled = hasLocationPermission)
-    }
-    
-    val mapUiSettings = remember(hasLocationPermission) {
-        MapUiSettings(zoomControlsEnabled = false, myLocationButtonEnabled = false, compassEnabled = true)
-    }
-
-    // Pulse animation for the separate circle overlay
+    // Pulse animation for the separate circle overlay (stops arrow from jittering)
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val radiusPulse by infiniteTransition.animateFloat(
         initialValue = 0f, targetValue = 100f,
@@ -152,8 +140,15 @@ fun LiveMapScreen(
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
-            properties = mapProperties,
-            uiSettings = mapUiSettings,
+            properties = MapProperties(
+                mapStyleOptions = mapStyle,
+                isMyLocationEnabled = hasLocationPermission
+            ),
+            uiSettings = MapUiSettings(
+                zoomControlsEnabled = false,
+                myLocationButtonEnabled = false,
+                compassEnabled = true
+            ),
             onMapClick = { followVehicle = false }
         ) {
             if (state.routePoints.isNotEmpty()) {
@@ -190,26 +185,24 @@ fun LiveMapScreen(
             // Vehicle Marker
             MarkerComposable(
                 state = truckMarkerState,
-                anchor = Offset(0.5f, 0.5f), // Rotate around center to prevent swinging jitter
+                anchor = Offset(0.5f, 0.5f), // Rotate around center
                 title = if (state.isArrived) "Arrived" else "Unit GA-01-1234",
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Surface(
-                        shape = CircleShape,
-                        color = if (state.isArrived) AccentTertiary else AccentPrimary,
-                        border = BorderStroke(2.dp, Color.White),
-                        shadowElevation = 8.dp,
-                        modifier = Modifier.size(28.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (state.isArrived) Icons.Default.Check else Icons.Default.Navigation,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier
-                                .padding(4.dp)
-                                .rotate(if (state.isArrived) 0f else animatedRotation)
-                        )
-                    }
+                Surface(
+                    shape = CircleShape,
+                    color = if (state.isArrived) AccentTertiary else AccentPrimary,
+                    border = BorderStroke(2.dp, Color.White),
+                    shadowElevation = 8.dp,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        imageVector = if (state.isArrived) Icons.Default.Check else Icons.Default.Navigation,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier
+                            .padding(4.dp)
+                            .rotate(if (state.isArrived) 0f else animatedRotation)
+                    )
                 }
             }
         }

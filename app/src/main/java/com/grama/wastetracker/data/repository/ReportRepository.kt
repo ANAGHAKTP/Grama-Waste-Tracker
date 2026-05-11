@@ -47,15 +47,12 @@ class ReportRepository(
     ) {
         val uid = auth.currentUser?.uid ?: "anonymous"
 
-        // Upload image if present
         var photoUrl: String? = null
-        imageUri?.let {
-            if (it != Uri.EMPTY) {
-                val timestamp = System.currentTimeMillis()
-                val storageRef = storage.reference.child("reports/${timestamp}_report.jpg")
-                storageRef.putFile(it).await()
-                photoUrl = storageRef.downloadUrl.await().toString()
-            }
+        if (imageUri != null && imageUri != Uri.EMPTY) {
+            val timestamp = System.currentTimeMillis()
+            val storageRef = storage.reference.child("reports/${timestamp}_report.jpg")
+            storageRef.putFile(imageUri).await()
+            photoUrl = storageRef.downloadUrl.await().toString()
         }
 
         val report = hashMapOf(
