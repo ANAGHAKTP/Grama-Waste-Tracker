@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -37,7 +38,8 @@ import androidx.compose.foundation.verticalScroll
 
 @Composable
 fun LoginScreen(
-    onAuthSuccess: () -> Unit
+    onAuthSuccess: () -> Unit,
+    onNavigateToRegister: () -> Unit
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
@@ -80,12 +82,41 @@ fun LoginScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.padding(bottom = 32.dp)
                 ) {
-                    Image(
-                        painter = painterResource(R.drawable.ic_login_logo),
-                        contentDescription = "Grama Logo",
-                        modifier = Modifier
-                            .fillMaxWidth(0.8f)
-                            .aspectRatio(1f)
+                    // Updated Logo Display
+                    Surface(
+                        shape = RoundedCornerShape(28.dp),
+                        color = Color.White,
+                        modifier = Modifier.size(160.dp),
+                        shadowElevation = 4.dp
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.ic_logo),
+                            contentDescription = "Grama Logo",
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .padding(12.dp)
+                                .fillMaxSize()
+                        )
+                    }
+                    
+                    Spacer(Modifier.height(24.dp))
+                    
+                    Text(
+                        text = "Grama Waste Tracker",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = GramaTheme.colors.textPrimary,
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Spacer(Modifier.height(8.dp))
+                    
+                    Text(
+                        text = "Clean Village • Green Future",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = GramaTheme.colors.textTertiary,
+                        textAlign = TextAlign.Center,
+                        letterSpacing = 2.sp
                     )
                 }
             }
@@ -146,7 +177,8 @@ fun LoginScreen(
                                             focusedBorderColor = AccentPrimary,
                                             unfocusedBorderColor = GramaTheme.colors.borderDim
                                         ),
-                                        singleLine = true
+                                        singleLine = true,
+                                        textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center)
                                     )
                                     
                                     Spacer(Modifier.height(24.dp))
@@ -239,6 +271,26 @@ fun LoginScreen(
                                     }
 
                                     GoogleSignInButton(onClick = { viewModel.signInWithGoogle(context) })
+
+                                    Spacer(Modifier.height(24.dp))
+                                    
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Text(
+                                            "New user?",
+                                            color = GramaTheme.colors.textSecondary,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                        TextButton(onClick = onNavigateToRegister) {
+                                            Text(
+                                                "Register here",
+                                                color = AccentPrimary,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }

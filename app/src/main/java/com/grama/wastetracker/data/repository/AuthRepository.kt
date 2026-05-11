@@ -104,11 +104,27 @@ class AuthRepository(
         PhoneAuthProvider.verifyPhoneNumber(options)
     }
 
-    suspend fun signInWithPhoneCredential(credential: PhoneAuthCredential): Result<UserProfile> {
+    suspend fun signInWithPhoneCredential(
+        credential: PhoneAuthCredential,
+        pendingProfile: UserProfile? = null
+    ): Result<UserProfile> {
         return try {
             val authResult = auth.signInWithCredential(credential).await()
             val user = authResult.user ?: throw Exception("Sign-in succeeded but user is null")
-            val profile = getOrCreateProfile(user)
+            
+            val profile = if (pendingProfile != null) {
+                // If we have registration details, create/update profile with them
+                val completeProfile = pendingProfile.copy(
+                    uid = user.uid,
+                    phoneNumber = user.phoneNumber ?: pendingProfile.phoneNumber,
+                    createdAt = Instant.now().toString()
+                )
+                db.collection("users").document(user.uid).set(completeProfile).await()
+                completeProfile
+            } else {
+                getOrCreateProfile(user)
+            }
+
             Result.success(profile)
         } catch (e: Exception) {
             Result.failure(e)

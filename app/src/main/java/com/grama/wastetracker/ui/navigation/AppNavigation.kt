@@ -30,7 +30,7 @@ fun AppNavigation() {
     val currentRoute = currentEntry?.destination?.route
 
     // Show loading while auth resolves
-    if (authState is AuthState.Loading) {
+    if (authState is AuthState.Loading && currentRoute == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
@@ -40,7 +40,7 @@ fun AppNavigation() {
     val isLoggedIn = authState is AuthState.Success
     val profile = (authState as? AuthState.Success)?.profile
     val isAdmin = profile?.userRole == UserRole.ADMIN
-    val showBottomBar = isLoggedIn && currentRoute != "login"
+    val showBottomBar = isLoggedIn && currentRoute != "login" && currentRoute != "register"
 
     Box(modifier = Modifier.fillMaxSize()) {
         NavHost(
@@ -50,6 +50,22 @@ fun AppNavigation() {
             composable("login") {
                 LoginScreen(
                     onAuthSuccess = {
+                        navController.navigate("dashboard") {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    },
+                    onNavigateToRegister = {
+                        navController.navigate("register")
+                    }
+                )
+            }
+
+            composable("register") {
+                RegisterScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onRegistrationSuccess = {
                         navController.navigate("dashboard") {
                             popUpTo("login") { inclusive = true }
                         }

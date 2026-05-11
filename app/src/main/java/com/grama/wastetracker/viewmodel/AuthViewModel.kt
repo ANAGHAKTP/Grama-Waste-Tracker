@@ -10,6 +10,7 @@ import com.google.firebase.auth.PhoneAuthCredential
 import com.google.firebase.auth.PhoneAuthProvider
 import com.grama.wastetracker.BuildConfig
 import com.grama.wastetracker.data.model.UserProfile
+import com.grama.wastetracker.data.model.UserRole
 import com.grama.wastetracker.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,6 +34,7 @@ class AuthViewModel(
 
     private var verificationId: String? = null
     private var resendToken: PhoneAuthProvider.ForceResendingToken? = null
+    private var pendingProfile: UserProfile? = null
 
     init {
         checkExistingSession()
@@ -74,6 +76,7 @@ class AuthViewModel(
     }
 
     fun sendOtp(phoneNumber: String, activity: Activity) {
+        pendingProfile = null // Ensure no registration data for normal login
         _authState.value = AuthState.Loading
         authRepository.verifyPhoneNumber(
             phoneNumber = phoneNumber,
@@ -92,6 +95,31 @@ class AuthViewModel(
         )
     }
 
+    fun registerCitizen(name: String, phone: String, address: String, activity: Activity) {
+        pendingProfile = UserProfile(
+            displayName = name,
+            phoneNumber = phone,
+            address = address,
+            role = UserRole.CITIZEN.value
+        )
+        _authState.value = AuthState.Loading
+        authRepository.verifyPhoneNumber(
+            phoneNumber = phone,
+            activity = activity,
+            onCodeSent = { id, token ->
+                verificationId = id
+                resendToken = token
+                _authState.value = AuthState.OtpSent
+            },
+            onVerificationCompleted = { credential ->
+                signInWithPhoneCredential(credential)
+            },
+            onVerificationFailed = { e ->
+                _authState.value = AuthState.Error(e.message ?: "Registration verification failed")
+            }
+        )
+    }
+
     fun verifyOtp(otp: String) {
         val id = verificationId ?: run {
             _authState.value = AuthState.Error("Verification ID is missing")
@@ -104,7 +132,7 @@ class AuthViewModel(
     private fun signInWithPhoneCredential(credential: PhoneAuthCredential) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
-            authRepository.signInWithPhoneCredential(credential)
+            authRepository.signInWithPhoneCredential(credential, pendingProfile)
                 .onSuccess { profile ->
                     val user = authRepository.getCurrentUser()
                     if (user != null) {
@@ -121,6 +149,7 @@ class AuthViewModel(
 
     fun resetToIdle() {
         _authState.value = AuthState.Idle
+        pendingProfile = null
     }
 
     fun signOut() {

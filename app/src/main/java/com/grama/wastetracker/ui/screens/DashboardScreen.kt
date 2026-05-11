@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -76,11 +77,21 @@ fun DashboardScreen(
             verticalAlignment = Alignment.Top
         ) {
             Column {
-                Image(
-                    painter = painterResource(com.grama.wastetracker.R.drawable.ic_logo),
-                    contentDescription = null,
-                    modifier = Modifier.size(40.dp).padding(bottom = 8.dp)
-                )
+                // Enhanced Logo Container
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color.White,
+                    modifier = Modifier.size(56.dp).padding(bottom = 8.dp),
+                    shadowElevation = 2.dp
+                ) {
+                    Image(
+                        painter = painterResource(com.grama.wastetracker.R.drawable.ic_logo),
+                        contentDescription = "Grama Logo",
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.padding(6.dp).fillMaxSize()
+                    )
+                }
+
                 Text(
                     text = "UNIT IDENTIFIER",
                     style = MaterialTheme.typography.labelLarge.copy(
