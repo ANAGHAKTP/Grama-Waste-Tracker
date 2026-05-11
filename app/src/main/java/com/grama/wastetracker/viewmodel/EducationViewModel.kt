@@ -35,8 +35,8 @@ class EducationViewModel(
         viewModelScope.launch {
             _state.value = _state.value.copy(searching = true, aiResult = null)
             
-            // Set an 8-second timeout for the classification
-            val result = withTimeoutOrNull(8000) {
+            // Increased timeout to 20 seconds to match Repository changes
+            val result = withTimeoutOrNull(20000L) {
                 geminiRepo.classifyWasteItem(q)
             }
             

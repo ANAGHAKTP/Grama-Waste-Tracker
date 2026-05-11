@@ -31,7 +31,7 @@ class GeminiRepository {
      */
     suspend fun getDailyInsight(): String {
         return try {
-            val response = withTimeoutOrNull(5000L) {
+            val response = withTimeoutOrNull(15000L) {
                 textModel.generateContent("Generate a 1-sentence helpful tip for a rural village resident about waste management. Be encouraging and simple.")
             }
             response?.text ?: FALLBACK_INSIGHT
@@ -46,7 +46,7 @@ class GeminiRepository {
      */
     suspend fun analyzeWasteImage(bitmap: Bitmap): WasteAnalysis {
         return try {
-            val result = withTimeoutOrNull(15000L) {
+            val result = withTimeoutOrNull(30000L) {
                 val prompt = content {
                     image(bitmap)
                     text("Analyze this image of waste. Return JSON: { \"type\": \"...\", \"action\": \"...\", \"severity\": \"low\" | \"medium\" | \"high\" }")
@@ -72,7 +72,7 @@ class GeminiRepository {
      */
     suspend fun classifyWasteItem(itemName: String): WasteClassification {
         return try {
-            val result = withTimeoutOrNull(8000L) {
+            val result = withTimeoutOrNull(20000L) {
                 val response = textModel.generateContent(
                     "Classify waste category for '$itemName'. Return JSON: { \"category\": \"...\", \"instruction\": \"...\" }"
                 )
@@ -96,7 +96,7 @@ class GeminiRepository {
     suspend fun generateExecutiveSummary(reportDescriptions: List<String>): String {
         return try {
             val reportList = reportDescriptions.joinToString("\n") { "- $it" }
-            val response = withTimeoutOrNull(12000L) {
+            val response = withTimeoutOrNull(25000L) {
                 textModel.generateContent("Provide a 2-sentence executive summary for the Village Panchayat based on these reports:\n$reportList")
             }
             response?.text ?: "No summary available."

@@ -79,8 +79,8 @@ class AdminViewModel(
             _state.value = _state.value.copy(summarizing = true, error = null)
             val descriptions = currentReports.map { "${it.description} (${it.status})" }
             
-            // Fixed: Explicit String type and Long timeout literal
-            val summary: String? = withTimeoutOrNull<String>(15000L) {
+            // Increased timeout and simplified for better inference
+            val summary = withTimeoutOrNull(25000L) {
                 geminiRepo.generateExecutiveSummary(descriptions)
             }
             
@@ -99,5 +99,13 @@ class AdminViewModel(
                 _state.value = _state.value.copy(error = "Resolution failed: ${e.message}")
             }
         }
+    }
+
+    /**
+     * Placeholder for seeding demo data from the UI.
+     */
+    fun seedData() {
+        // This is called from the UI hidden debug button
+        refresh()
     }
 }
