@@ -13,8 +13,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class MapState(
-    val vehicleLat: Double = 0.0,
-    val vehicleLng: Double = 0.0,
+    val vehicleLat: Double = 12.9716, // Default to Bengaluru
+    val vehicleLng: Double = 77.5946,
     val userLat: Double? = null,
     val userLng: Double? = null,
     val vehicleRotation: Float = 0f,
@@ -59,7 +59,7 @@ class MapViewModel : ViewModel() {
     private fun startMoving() {
         simulationJob = viewModelScope.launch {
             while (true) {
-                delay(4000) // Update every 4 seconds for a stable, professional look
+                delay(4000) // Update every 4 seconds
                 
                 var arrived = false
                 _state.update { current ->
@@ -70,7 +70,7 @@ class MapViewModel : ViewModel() {
                     Location.distanceBetween(current.vehicleLat, current.vehicleLng, uLat, uLng, distResults)
                     val distanceMeters = distResults[0]
 
-                    if (distanceMeters < 15) { 
+                    if (distanceMeters < 20) { 
                         arrived = true
                         return@update current.copy(isArrived = true, distanceKm = 0.0, eta = 0)
                     }
@@ -79,7 +79,7 @@ class MapViewModel : ViewModel() {
                     val nextLat = current.vehicleLat + (uLat - current.vehicleLat) * 0.1
                     val nextLng = current.vehicleLng + (uLng - current.vehicleLng) * 0.1
                     
-                    // Calculate bearing so the truck arrow points exactly where it's going
+                    // Calculate bearing
                     val startLoc = Location("").apply { latitude = current.vehicleLat; longitude = current.vehicleLng }
                     val endLoc = Location("").apply { latitude = nextLat; longitude = nextLng }
                     val bearing = startLoc.bearingTo(endLoc)

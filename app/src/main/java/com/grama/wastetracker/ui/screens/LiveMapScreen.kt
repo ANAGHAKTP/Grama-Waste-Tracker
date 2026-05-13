@@ -15,6 +15,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.rounded.Route
+import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -54,7 +56,6 @@ fun LiveMapScreen(
     val isDark = isSystemInDarkTheme()
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     
-    var isProtocolAcknowledged by remember { mutableStateOf(false) }
     var followVehicle by remember { mutableStateOf(true) }
     
     var hasLocationPermission by remember {
@@ -68,18 +69,26 @@ fun LiveMapScreen(
         onResult = { isGranted -> hasLocationPermission = isGranted }
     )
 
-    // Force fetch fresh user coordinates
+    // Sync Simulation with Fallback
     LaunchedEffect(hasLocationPermission) {
         if (hasLocationPermission) {
             val cts = CancellationTokenSource()
             fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cts.token)
                 .addOnSuccessListener { location ->
-                    location?.let {
-                        mapViewModel.syncSimulationWithUser(LatLng(it.latitude, it.longitude))
+                    if (location != null) {
+                        mapViewModel.syncSimulationWithUser(LatLng(location.latitude, location.longitude))
+                    } else {
+                        // Fallback to Bengaluru if GPS is not providing a fix
+                        mapViewModel.syncSimulationWithUser(LatLng(12.9716, 77.5946))
                     }
+                }
+                .addOnFailureListener {
+                    mapViewModel.syncSimulationWithUser(LatLng(12.9716, 77.5946))
                 }
         } else {
             launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            // Even if denied, start simulation in default area
+            mapViewModel.syncSimulationWithUser(LatLng(12.9716, 77.5946))
         }
     }
 
@@ -88,13 +97,18 @@ fun LiveMapScreen(
         position = CameraPosition.fromLatLngZoom(vehiclePosition, 16f)
     }
 
-    // Stable MarkerState to prevent jitter
+    // Update camera when simulation starts
+    LaunchedEffect(state.isLoading) {
+        if (!state.isLoading) {
+            cameraPositionState.position = CameraPosition.fromLatLngZoom(vehiclePosition, 16f)
+        }
+    }
+
     val truckMarkerState = rememberMarkerState(position = vehiclePosition)
     LaunchedEffect(vehiclePosition) {
         truckMarkerState.position = vehiclePosition
     }
 
-    // Smooth Camera Tracking
     LaunchedEffect(vehiclePosition, followVehicle) {
         if (followVehicle && !state.isLoading && !state.isArrived) {
             cameraPositionState.animate(
@@ -104,7 +118,6 @@ fun LiveMapScreen(
         }
     }
 
-    // Animate rotation smoothly
     val animatedRotation by animateFloatAsState(
         targetValue = state.vehicleRotation,
         animationSpec = tween(1000),
@@ -118,7 +131,6 @@ fun LiveMapScreen(
         )
     }
 
-    // Pulse animation for the separate circle overlay (stops arrow from jittering)
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val radiusPulse by infiniteTransition.animateFloat(
         initialValue = 0f, targetValue = 100f,
@@ -127,16 +139,6 @@ fun LiveMapScreen(
     )
 
     Box(modifier = Modifier.fillMaxSize().background(GramaTheme.colors.bgPrimary)) {
-        if (state.isLoading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator(color = AccentPrimary)
-                    Spacer(Modifier.height(16.dp))
-                    Text("Acquiring GPS...", style = MaterialTheme.typography.labelMedium, color = GramaTheme.colors.textPrimary)
-                }
-            }
-        }
-
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
@@ -149,6 +151,7 @@ fun LiveMapScreen(
                 myLocationButtonEnabled = false,
                 compassEnabled = true
             ),
+            contentPadding = PaddingValues(top = 160.dp, bottom = 100.dp),
             onMapClick = { followVehicle = false }
         ) {
             if (state.routePoints.isNotEmpty()) {
@@ -160,7 +163,6 @@ fun LiveMapScreen(
                 )
             }
 
-            // Pulsing Range Circle (Separated from Marker to stop jitter)
             if (!state.isLoading && !state.isArrived) {
                 Circle(
                     center = vehiclePosition,
@@ -171,21 +173,19 @@ fun LiveMapScreen(
                 )
             }
 
-            // User's Destination Marker
             val uLat = state.userLat
             val uLng = state.userLng
             if (uLat != null && uLng != null) {
                 Marker(
                     state = rememberMarkerState(position = LatLng(uLat, uLng)),
-                    title = "Your Home",
+                    title = "Destination",
                     icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
                 )
             }
 
-            // Vehicle Marker
             MarkerComposable(
                 state = truckMarkerState,
-                anchor = Offset(0.5f, 0.5f), // Rotate around center
+                anchor = Offset(0.5f, 0.5f),
                 title = if (state.isArrived) "Arrived" else "Unit GA-01-1234",
             ) {
                 Surface(
@@ -207,29 +207,49 @@ fun LiveMapScreen(
             }
         }
 
-        // ── Logistics HUD ──
+        if (state.isLoading) {
+            Box(Modifier.fillMaxSize().background(GramaTheme.colors.bgPrimary.copy(alpha = 0.8f)), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(color = AccentPrimary)
+                    Spacer(Modifier.height(16.dp))
+                    Text("Initializing Simulation...", style = MaterialTheme.typography.labelMedium, color = GramaTheme.colors.textPrimary)
+                }
+            }
+        }
+
+        // HUD Card - Refined to match screenshot
         AnimatedVisibility(
             visible = !state.isLoading,
-            enter = slideInVertically { -it },
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 56.dp, start = 20.dp, end = 20.dp)
+            enter = slideInVertically { -it } + fadeIn(),
+            exit = slideOutVertically { -it } + fadeOut(),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 48.dp, start = 16.dp, end = 16.dp)
         ) {
             GeometricCard(
-                elevation = 12.dp,
+                elevation = 8.dp,
                 backgroundColor = if (isDark) GramaTheme.colors.bgSecondary else Color.White,
-                contentPadding = 20.dp
+                contentPadding = 16.dp,
+                modifier = Modifier.fillMaxWidth(0.9f)
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Icon Container
                     Surface(
-                        modifier = Modifier.size(48.dp),
-                        color = (if (state.isArrived) AccentTertiary else AccentPrimary).copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(4.dp)
+                        modifier = Modifier.size(56.dp),
+                        color = (if (state.isArrived) AccentTertiary else AccentPrimary).copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(8.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = if (state.isArrived) Icons.Default.CheckCircle else Icons.Default.Navigation,
                                 contentDescription = null,
                                 tint = if (state.isArrived) AccentTertiary else AccentPrimary,
-                                modifier = Modifier.size(24.dp).rotate(state.vehicleRotation)
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .rotate(if (state.isArrived) 0f else state.vehicleRotation)
                             )
                         }
                     }
@@ -237,14 +257,21 @@ fun LiveMapScreen(
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
                             text = if (state.isArrived) "ARRIVAL CONFIRMED" else "LOGISTICS STATUS",
-                            style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 2.sp, fontWeight = FontWeight.Bold),
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                letterSpacing = 1.2.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                fontFamily = FontFamily.SansSerif
+                            ),
                             color = if (state.isArrived) AccentTertiary else GramaTheme.colors.textPrimary
                         )
                         if (!state.isArrived) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                                StatusItem(Icons.Default.Schedule, "${state.eta} MIN")
-                                DividerDot()
-                                StatusItem(Icons.Default.Route, "${"%.2f".format(state.distanceKm)} KM")
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                StatusItem(Icons.Rounded.Schedule, "${state.eta} MIN")
+                                Box(Modifier.size(3.dp).background(GramaTheme.colors.textTertiary.copy(alpha = 0.3f), CircleShape))
+                                StatusItem(Icons.Rounded.Route, "${"%.2f".format(state.distanceKm)} KM")
                             }
                         }
                     }
@@ -252,19 +279,25 @@ fun LiveMapScreen(
             }
         }
 
-        // FAB Controls
+        // FAB - Positioned above the bottom navigation
         if (!state.isLoading) {
             FloatingActionButton(
                 onClick = { 
                     followVehicle = true
                     cameraPositionState.position = CameraPosition.fromLatLngZoom(vehiclePosition, 16f)
                 },
-                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 16.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(bottom = 116.dp, end = 20.dp),
                 containerColor = if (followVehicle) AccentPrimary else GramaTheme.colors.bgSecondary,
                 contentColor = if (followVehicle) Color.White else AccentPrimary,
-                shape = CircleShape
+                shape = CircleShape,
+                elevation = FloatingActionButtonDefaults.elevation(6.dp)
             ) {
-                Icon(imageVector = if (followVehicle) Icons.Default.GpsFixed else Icons.Default.GpsNotFixed, contentDescription = null)
+                Icon(
+                    imageVector = if (followVehicle) Icons.Default.GpsFixed else Icons.Default.GpsNotFixed,
+                    contentDescription = "Recenter"
+                )
             }
         }
     }
@@ -272,13 +305,23 @@ fun LiveMapScreen(
 
 @Composable
 private fun StatusItem(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String) {
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, null, tint = GramaTheme.colors.textTertiary, modifier = Modifier.size(12.dp))
-        Text(text, style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace), color = GramaTheme.colors.textTertiary)
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = GramaTheme.colors.textTertiary,
+            modifier = Modifier.size(14.dp)
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall.copy(
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 0.5.sp
+            ),
+            color = GramaTheme.colors.textTertiary
+        )
     }
-}
-
-@Composable
-private fun DividerDot() {
-    Box(Modifier.size(4.dp).background(GramaTheme.colors.borderDim, CircleShape))
 }
