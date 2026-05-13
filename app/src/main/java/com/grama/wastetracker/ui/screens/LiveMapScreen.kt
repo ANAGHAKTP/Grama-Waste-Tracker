@@ -75,7 +75,7 @@ fun LiveMapScreen(
             fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cts.token)
                 .addOnSuccessListener { location ->
                     location?.let {
-                        mapViewModel.updateUserLocation(LatLng(it.latitude, it.longitude))
+                        mapViewModel.syncSimulationWithUser(LatLng(it.latitude, it.longitude))
                     }
                 }
         } else {
