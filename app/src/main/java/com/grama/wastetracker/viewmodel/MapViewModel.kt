@@ -2,10 +2,10 @@ package com.grama.wastetracker.viewmodel
 
 import android.location.Location
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.model.LatLng
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import com.grama.wastetracker.data.repository.LogisticsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,77 +25,89 @@ data class MapState(
     val routePoints: List<LatLng> = emptyList()
 )
 
-class MapViewModel : ViewModel() {
+class MapViewModel(
+    private val logisticsRepository: LogisticsRepository = LogisticsRepository()
+) : ViewModel() {
 
     private val _state = MutableStateFlow(MapState())
     val state: StateFlow<MapState> = _state.asStateFlow()
 
-    private var simulationJob: Job? = null
+    init {
+        observeVehicle()
+    }
 
-    /**
-     * Synchronizes simulation with your real GPS location.
-     */
-    fun syncSimulationWithUser(userLocation: LatLng) {
-        if (_state.value.userLat != null) return 
+    private fun observeVehicle() {
+        viewModelScope.launch {
+            logisticsRepository.observeActiveVehicle().collect { vehicle ->
+                vehicle?.let {
+                    val newPos = LatLng(it.location.lat, it.location.lng)
+                    val current = _state.value
+                    
+                    // Calculate rotation if we have a previous position
+                    val rotation = if (current.vehicleLat != 0.0) {
+                        calculateBearing(
+                            current.vehicleLat, current.vehicleLng,
+                            newPos.latitude, newPos.longitude
+                        )
+                    } else 0f
+                    
+                    updateVehicleLocation(newPos, rotation) 
+                }
+            }
+        }
+    }
 
-        simulationJob?.cancel()
-        
-        // Spawn truck roughly 500m away from your location
-        val startLat = userLocation.latitude - 0.003
-        val startLng = userLocation.longitude - 0.002
-        
+    private fun calculateBearing(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Float {
+        val loc1 = Location("").apply { latitude = lat1; longitude = lng1 }
+        val loc2 = Location("").apply { latitude = lat2; longitude = lng2 }
+        return loc1.bearingTo(loc2)
+    }
+
+    fun updateUserLocation(userLocation: LatLng) {
         _state.update { it.copy(
             userLat = userLocation.latitude,
             userLng = userLocation.longitude,
-            vehicleLat = startLat,
-            vehicleLng = startLng,
-            isLoading = false,
-            routePoints = listOf(LatLng(startLat, startLng), userLocation)
+            isLoading = false
         )}
-        
-        startMoving()
     }
 
-    private fun startMoving() {
-        simulationJob = viewModelScope.launch {
-            while (true) {
-                delay(4000) // Update every 4 seconds for a stable, professional look
-                
-                var arrived = false
-                _state.update { current ->
-                    val uLat = current.userLat ?: return@update current
-                    val uLng = current.userLng ?: return@update current
-                    
-                    val distResults = FloatArray(1)
-                    Location.distanceBetween(current.vehicleLat, current.vehicleLng, uLat, uLng, distResults)
-                    val distanceMeters = distResults[0]
+    fun updateVehicleLocation(newVehiclePos: LatLng, rotation: Float) {
+        _state.update { current ->
+            val uLat = current.userLat ?: return@update current.copy(
+                vehicleLat = newVehiclePos.latitude,
+                vehicleLng = newVehiclePos.longitude,
+                vehicleRotation = rotation
+            )
+            val uLng = current.userLng ?: return@update current.copy(
+                vehicleLat = newVehiclePos.latitude,
+                vehicleLng = newVehiclePos.longitude,
+                vehicleRotation = rotation
+            )
+            
+            val distResults = FloatArray(1)
+            Location.distanceBetween(newVehiclePos.latitude, newVehiclePos.longitude, uLat, uLng, distResults)
+            val distanceMeters = distResults[0]
+            
+            val distanceKm = distanceMeters / 1000.0
+            val eta = (distanceKm / 15.0 * 60).toInt().coerceAtLeast(1)
 
-                    if (distanceMeters < 15) { 
-                        arrived = true
-                        return@update current.copy(isArrived = true, distanceKm = 0.0, eta = 0)
-                    }
+            current.copy(
+                vehicleLat = newVehiclePos.latitude,
+                vehicleLng = newVehiclePos.longitude,
+                vehicleRotation = rotation,
+                distanceKm = distanceKm,
+                eta = eta,
+                isArrived = distanceMeters < 30,
+                routePoints = listOf(newVehiclePos, LatLng(uLat, uLng))
+            )
+        }
+    }
 
-                    // Move truck closer to your home
-                    val nextLat = current.vehicleLat + (uLat - current.vehicleLat) * 0.1
-                    val nextLng = current.vehicleLng + (uLng - current.vehicleLng) * 0.1
-                    
-                    // Calculate bearing so the truck arrow points exactly where it's going
-                    val startLoc = Location("").apply { latitude = current.vehicleLat; longitude = current.vehicleLng }
-                    val endLoc = Location("").apply { latitude = nextLat; longitude = nextLng }
-                    val bearing = startLoc.bearingTo(endLoc)
-                    
-                    val distanceKm = distanceMeters / 1000.0
-                    val eta = (distanceKm / 15.0 * 60).toInt().coerceAtLeast(1)
-
-                    current.copy(
-                        vehicleLat = nextLat,
-                        vehicleLng = nextLng,
-                        vehicleRotation = bearing,
-                        distanceKm = distanceKm,
-                        eta = eta
-                    )
-                }
-                if (arrived) break
+    companion object {
+        fun factory(): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return MapViewModel(LogisticsRepository()) as T
             }
         }
     }

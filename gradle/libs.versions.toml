@@ -2,6 +2,7 @@
 agp = "8.7.3"
 kotlin = "2.1.0"
 ksp = "2.1.0-1.0.29"
+flogger = "0.8"
 
 # Material
 material = "1.13.0"
@@ -100,6 +101,9 @@ camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 coroutines-play = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "coroutines" }
+
+# Logging
+flogger-android = { group = "com.google.flogger", name = "flogger-android", version.ref = "flogger" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

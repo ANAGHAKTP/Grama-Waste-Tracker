@@ -114,4 +114,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.coroutines.android)
     implementation(libs.coroutines.play)
+
+    // Logging
+    implementation(libs.flogger.android)
 }
