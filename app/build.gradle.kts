@@ -116,5 +116,6 @@ dependencies {
     implementation(libs.coroutines.play)
 
     // Logging
-    implementation(libs.flogger.android)
+    implementation(libs.flogger)
+    implementation(libs.flogger.system.backend)
 }

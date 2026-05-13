@@ -2,7 +2,7 @@
 agp = "8.7.3"
 kotlin = "2.1.0"
 ksp = "2.1.0-1.0.29"
-flogger = "0.8"
+flogger = "0.9"
 
 # Material
 material = "1.13.0"
@@ -103,7 +103,8 @@ coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutin
 coroutines-play = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "coroutines" }
 
 # Logging
-flogger-android = { group = "com.google.flogger", name = "flogger-android", version.ref = "flogger" }
+flogger = { group = "com.google.flogger", name = "flogger", version.ref = "flogger" }
+flogger-system-backend = { group = "com.google.flogger", name = "flogger-system-backend", version.ref = "flogger" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
