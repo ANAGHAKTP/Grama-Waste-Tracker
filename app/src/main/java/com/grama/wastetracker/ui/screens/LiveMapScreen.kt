@@ -53,7 +53,7 @@ fun LiveMapScreen(
 ) {
     val state by mapViewModel.state.collectAsState()
     val context = LocalContext.current
-    val isDark = isSystemInDarkTheme()
+    val isDark = ThemeState.isDarkTheme
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     
     var followVehicle by remember { mutableStateOf(true) }
@@ -157,9 +157,10 @@ fun LiveMapScreen(
             if (state.routePoints.isNotEmpty()) {
                 Polyline(
                     points = state.routePoints,
-                    color = AccentPrimary.copy(alpha = 0.4f),
-                    width = 8f,
-                    jointType = com.google.android.gms.maps.model.JointType.ROUND
+                    color = (if (isDark) AccentSecondary else AccentPrimary).copy(alpha = 0.6f),
+                    width = 10f,
+                    jointType = com.google.android.gms.maps.model.JointType.ROUND,
+                    pattern = listOf(com.google.android.gms.maps.model.Dot(), com.google.android.gms.maps.model.Gap(10f))
                 )
             }
 
@@ -176,11 +177,24 @@ fun LiveMapScreen(
             val uLat = state.userLat
             val uLng = state.userLng
             if (uLat != null && uLng != null) {
-                Marker(
+                MarkerComposable(
                     state = rememberMarkerState(position = LatLng(uLat, uLng)),
                     title = "Destination",
-                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
-                )
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Surface(
+                            modifier = Modifier.size(42.dp),
+                            color = AccentSecondary.copy(alpha = 0.2f),
+                            shape = CircleShape
+                        ) {}
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = null,
+                            tint = AccentSecondary,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                }
             }
 
             MarkerComposable(
@@ -189,18 +203,18 @@ fun LiveMapScreen(
                 title = if (state.isArrived) "Arrived" else "Unit GA-01-1234",
             ) {
                 Surface(
-                    shape = CircleShape,
+                    shape = RoundedCornerShape(8.dp),
                     color = if (state.isArrived) AccentTertiary else AccentPrimary,
                     border = BorderStroke(2.dp, Color.White),
                     shadowElevation = 8.dp,
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
-                        imageVector = if (state.isArrived) Icons.Default.Check else Icons.Default.Navigation,
+                        imageVector = if (state.isArrived) Icons.Default.Check else Icons.Default.LocalShipping,
                         contentDescription = null,
                         tint = Color.White,
                         modifier = Modifier
-                            .padding(4.dp)
+                            .padding(6.dp)
                             .rotate(if (state.isArrived) 0f else animatedRotation)
                     )
                 }
@@ -227,8 +241,9 @@ fun LiveMapScreen(
                 .padding(top = 48.dp, start = 16.dp, end = 16.dp)
         ) {
             GeometricCard(
-                elevation = 8.dp,
-                backgroundColor = if (isDark) GramaTheme.colors.bgSecondary else Color.White,
+                elevation = 12.dp,
+                backgroundColor = if (isDark) GramaTheme.colors.bgSecondary.copy(alpha = 0.85f) else Color.White,
+                borderColor = if (isDark) Color.White.copy(alpha = 0.1f) else GramaTheme.colors.borderDim,
                 contentPadding = 16.dp,
                 modifier = Modifier.fillMaxWidth(0.9f)
             ) {

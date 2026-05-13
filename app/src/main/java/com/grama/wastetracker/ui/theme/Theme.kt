@@ -104,6 +104,18 @@ val GramaShapes = Shapes(
 // ── Theme state manager ──
 object ThemeState {
     var isDarkTheme by mutableStateOf(false)
+    private var isInitialized = false
+
+    @Composable
+    fun Initialize() {
+        if (!isInitialized) {
+            val systemDark = isSystemInDarkTheme()
+            SideEffect {
+                isDarkTheme = systemDark
+                isInitialized = true
+            }
+        }
+    }
 
     fun toggle() {
         isDarkTheme = !isDarkTheme
@@ -115,6 +127,7 @@ fun GramaWasteTheme(
     darkTheme: Boolean = ThemeState.isDarkTheme,
     content: @Composable () -> Unit
 ) {
+    ThemeState.Initialize()
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
     val gramaColors = if (darkTheme) DarkGramaColors else LightGramaColors
 

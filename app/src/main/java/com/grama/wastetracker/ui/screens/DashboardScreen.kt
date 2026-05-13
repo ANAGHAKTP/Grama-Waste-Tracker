@@ -7,6 +7,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -20,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -53,6 +55,7 @@ fun DashboardScreen(
     onSignOut: () -> Unit
 ) {
     val dashState by dashboardViewModel.state.collectAsState()
+    val isDark = isSystemInDarkTheme()
 
     val quickActions = listOf(
         QuickAction("map", "Live Tracking", Icons.Default.LocationOn, AccentPrimary),
@@ -77,12 +80,13 @@ fun DashboardScreen(
             verticalAlignment = Alignment.Top
         ) {
             Column {
-                // Enhanced Logo Container
+                // Refined Logo Container - using theme-aware color
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = Color.White,
+                    color = GramaTheme.colors.bgSecondary,
                     modifier = Modifier.size(56.dp).padding(bottom = 8.dp),
-                    shadowElevation = 2.dp
+                    border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.1f) else GramaTheme.colors.borderDim),
+                    shadowElevation = if (isDark) 0.dp else 2.dp
                 ) {
                     Image(
                         painter = painterResource(com.grama.wastetracker.R.drawable.ic_logo),
@@ -133,14 +137,14 @@ fun DashboardScreen(
                         .clickable { ThemeState.toggle() },
                     shape = RoundedCornerShape(12.dp),
                     border = BorderStroke(1.dp, GramaTheme.colors.borderDim),
-                    color = Color.Transparent
+                    color = GramaTheme.colors.bgSecondary
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = if (ThemeState.isDarkTheme) Icons.Default.LightMode
                             else Icons.Default.DarkMode,
                             contentDescription = "Toggle theme",
-                            tint = GramaTheme.colors.textTertiary,
+                            tint = if (isDark) AccentSecondary else GramaTheme.colors.textTertiary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -156,7 +160,7 @@ fun DashboardScreen(
                         },
                     shape = RoundedCornerShape(12.dp),
                     border = BorderStroke(1.dp, GramaTheme.colors.borderDim),
-                    color = Color.Transparent
+                    color = GramaTheme.colors.bgSecondary
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
@@ -172,35 +176,15 @@ fun DashboardScreen(
 
         HorizontalDivider(color = GramaTheme.colors.borderDim, thickness = 1.dp)
 
-        // ── Error Banner ──
-        AnimatedVisibility(visible = dashState.error != null) {
-            Surface(
-                modifier = Modifier.fillMaxWidth().clickable { dashboardViewModel.refresh() },
-                color = AccentError.copy(alpha = 0.1f),
-                border = BorderStroke(1.dp, AccentError.copy(alpha = 0.2f)),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Row(
-                    Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Icon(Icons.Default.CloudOff, null, tint = AccentError, modifier = Modifier.size(16.dp))
-                        Text(dashState.error ?: "", style = MaterialTheme.typography.bodySmall, color = AccentError)
-                    }
-                    Text("RETRY", style = MaterialTheme.typography.labelLarge.copy(fontSize = 10.sp, letterSpacing = 1.sp), color = AccentError)
-                }
-            }
-        }
-
         // ── AI Daily Insight ──
         AnimatedVisibility(
             visible = dashState.dailyInsight.isNotEmpty() && !dashState.insightLoading,
             enter = fadeIn() + slideInHorizontally { -it }
         ) {
             GeometricCard(
-                borderColor = AccentPrimary.copy(alpha = 0.2f)
+                backgroundColor = if (isDark) GramaTheme.colors.bgSecondary.copy(alpha = 0.85f) else GramaTheme.colors.bgSecondary,
+                borderColor = if (isDark) Color.White.copy(alpha = 0.15f) else AccentPrimary.copy(alpha = 0.2f),
+                elevation = if (isDark) 0.dp else 4.dp
             ) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -244,10 +228,21 @@ fun DashboardScreen(
         // ── Vehicle ETA Card ──
         Surface(
             shape = RoundedCornerShape(12.dp),
-            color = if (dashState.activeVehicle != null) AccentPrimary else GramaTheme.colors.bgSecondary,
-            border = if (dashState.activeVehicle == null) BorderStroke(1.dp, GramaTheme.colors.borderDim) else null,
+            color = if (dashState.activeVehicle != null) AccentPrimary 
+                    else if (isDark) GramaTheme.colors.bgSecondary.copy(alpha = 0.85f) 
+                    else GramaTheme.colors.bgSecondary,
+            border = BorderStroke(1.dp, if (dashState.activeVehicle != null) Color.White.copy(alpha = 0.2f) 
+                    else if (isDark) Color.White.copy(alpha = 0.1f) 
+                    else GramaTheme.colors.borderDim),
             shadowElevation = if (dashState.activeVehicle != null) 12.dp else 0.dp,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().then(
+                if (dashState.activeVehicle != null) Modifier.shadow(
+                    elevation = 20.dp,
+                    shape = RoundedCornerShape(12.dp),
+                    ambientColor = AccentPrimary,
+                    spotColor = AccentPrimary
+                ) else Modifier
+            )
         ) {
             Box(modifier = Modifier.padding(24.dp)) {
                 Row(
@@ -256,9 +251,11 @@ fun DashboardScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        // IN TRANSIT badge with subtle glow
                         Surface(
                             shape = RoundedCornerShape(50),
-                            color = (if (dashState.activeVehicle != null) Color.White else GramaTheme.colors.textTertiary).copy(alpha = 0.1f)
+                            color = (if (dashState.activeVehicle != null) Color.White else GramaTheme.colors.textTertiary).copy(alpha = 0.15f),
+                            border = if (dashState.activeVehicle != null) BorderStroke(0.5.dp, Color.White.copy(alpha = 0.3f)) else null
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -276,6 +273,7 @@ fun DashboardScreen(
                                     style = MaterialTheme.typography.labelLarge.copy(
                                         fontSize = 9.sp,
                                         letterSpacing = 2.sp,
+                                        fontWeight = FontWeight.Bold
                                     ),
                                     color = if (dashState.activeVehicle != null) Color.White else GramaTheme.colors.textTertiary
                                 )
@@ -322,7 +320,7 @@ fun DashboardScreen(
         // ── Quick Actions Grid ──
         SectionHeader(title = "Services")
 
-        // 2x2 grid
+        // 2x2 grid with softened borders
         Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
             for (rowIndex in 0..1) {
                 Row(
@@ -336,13 +334,13 @@ fun DashboardScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .clickable { onNavigate(action.route) },
-                            color = GramaTheme.colors.bgSecondary,
-                            border = BorderStroke(0.5.dp, GramaTheme.colors.borderDim),
+                            color = if (isDark) GramaTheme.colors.bgSecondary.copy(alpha = 0.85f) else GramaTheme.colors.bgSecondary,
+                            border = BorderStroke(0.5.dp, if (isDark) Color.White.copy(alpha = 0.08f) else GramaTheme.colors.borderDim),
                             shape = RoundedCornerShape(
-                                topStart = if (rowIndex == 0 && colIndex == 0) 12.dp else 0.dp,
-                                topEnd = if (rowIndex == 0 && colIndex == 1) 12.dp else 0.dp,
-                                bottomStart = if (rowIndex == 1 && colIndex == 0) 12.dp else 0.dp,
-                                bottomEnd = if (rowIndex == 1 && colIndex == 1) 12.dp else 0.dp
+                                topStart = if (rowIndex == 0 && colIndex == 0) 12.dp else 4.dp,
+                                topEnd = if (rowIndex == 0 && colIndex == 1) 12.dp else 4.dp,
+                                bottomStart = if (rowIndex == 1 && colIndex == 0) 12.dp else 4.dp,
+                                bottomEnd = if (rowIndex == 1 && colIndex == 1) 12.dp else 4.dp
                             )
                         ) {
                             Column(
@@ -362,7 +360,7 @@ fun DashboardScreen(
                                 ) {
                                     Text(
                                         text = action.label,
-                                        style = MaterialTheme.typography.titleMedium,
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium),
                                         color = GramaTheme.colors.textPrimary
                                     )
                                     Icon(

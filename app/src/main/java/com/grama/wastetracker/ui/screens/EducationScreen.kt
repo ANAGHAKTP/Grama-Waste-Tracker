@@ -4,6 +4,7 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,6 +15,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
@@ -43,6 +47,7 @@ val GUIDELINES = listOf(
 @Composable
 fun EducationScreen(viewModel: EducationViewModel = viewModel()) {
     val state by viewModel.state.collectAsState()
+    val isDark = isSystemInDarkTheme()
 
     Column(
         modifier = Modifier.fillMaxSize().background(GramaTheme.colors.bgPrimary)
@@ -52,49 +57,114 @@ fun EducationScreen(viewModel: EducationViewModel = viewModel()) {
     ) {
         // Header
         Column {
-            Text("Docs.Protocol", style = MaterialTheme.typography.displaySmall.copy(fontFamily = SpaceGroteskFamily, fontWeight = FontWeight.Bold), color = GramaTheme.colors.textPrimary)
+            Text(
+                "Docs.Protocol",
+                style = MaterialTheme.typography.displaySmall.copy(
+                    fontFamily = SpaceGroteskFamily,
+                    fontWeight = FontWeight.Bold
+                ),
+                color = GramaTheme.colors.textPrimary
+            )
             Spacer(Modifier.height(8.dp))
-            Text("PUBLIC SEGREGATION STANDARDS", style = MaterialTheme.typography.labelLarge.copy(fontSize = 9.sp, letterSpacing = 2.sp), color = GramaTheme.colors.textTertiary)
+            Text(
+                "PUBLIC SEGREGATION STANDARDS",
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontSize = 9.sp,
+                    letterSpacing = 2.sp
+                ),
+                color = GramaTheme.colors.textTertiary
+            )
         }
         HorizontalDivider(color = GramaTheme.colors.borderDim, thickness = 1.dp)
 
-        // AI Search
+        // AI Search - Refined aesthetic
         SectionHeader(title = "Neural Assistant")
-        GeometricCard {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        GeometricCard(
+            backgroundColor = if (isDark) GramaTheme.colors.bgSecondary.copy(alpha = 0.85f) else GramaTheme.colors.bgSecondary,
+            elevation = if (isDark) 0.dp else 2.dp,
+            borderColor = if (isDark) Color.White.copy(alpha = 0.15f) else GramaTheme.colors.borderDim
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 OutlinedTextField(
-                    value = state.query, onValueChange = viewModel::updateQuery,
-                    placeholder = { Text("DISPOSAL QUERY...", style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)) },
+                    value = state.query,
+                    onValueChange = viewModel::updateQuery,
+                    placeholder = {
+                        Text(
+                            "DISPOSAL QUERY...",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontFamily = FontFamily.Monospace,
+                                color = GramaTheme.colors.textTertiary
+                            )
+                        )
+                    },
                     modifier = Modifier.weight(1f),
-                    leadingIcon = { Icon(Icons.Default.Search, null, Modifier.size(16.dp)) },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Search,
+                            null,
+                            Modifier.size(16.dp),
+                            tint = AccentPrimary
+                        )
+                    },
                     singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = AccentPrimary, unfocusedBorderColor = GramaTheme.colors.borderDim, focusedContainerColor = GramaTheme.colors.bgPrimary, unfocusedContainerColor = GramaTheme.colors.bgPrimary),
-                    shape = RoundedCornerShape(4.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = AccentPrimary,
+                        unfocusedBorderColor = if (isDark) Color.White.copy(alpha = 0.05f) else GramaTheme.colors.borderDim,
+                        focusedContainerColor = GramaTheme.colors.bgPrimary.copy(alpha = 0.5f),
+                        unfocusedContainerColor = GramaTheme.colors.bgPrimary.copy(alpha = 0.5f)
+                    ),
+                    shape = RoundedCornerShape(8.dp),
                     textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
                 )
-                Button(onClick = viewModel::searchWasteClassification, enabled = !state.searching && state.query.isNotBlank(),
-                    colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary, disabledContainerColor = GramaTheme.colors.bgTertiary),
-                    shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(16.dp)) {
-                    if (state.searching) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = Color.White)
-                    else Icon(Icons.Default.AutoAwesome, null, Modifier.size(20.dp))
+                Button(
+                    onClick = viewModel::searchWasteClassification,
+                    enabled = !state.searching && state.query.isNotBlank(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AccentPrimary,
+                        disabledContainerColor = GramaTheme.colors.bgTertiary
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(16.dp),
+                    modifier = Modifier.height(52.dp)
+                ) {
+                    if (state.searching) {
+                        CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = Color.White)
+                    } else {
+                        Icon(Icons.Default.AutoAwesome, null, Modifier.size(20.dp))
+                    }
                 }
             }
             AnimatedVisibility(visible = state.aiResult != null) {
                 Column {
                     Spacer(Modifier.height(16.dp))
-                    HorizontalDivider(color = GramaTheme.colors.borderDim)
+                    HorizontalDivider(color = GramaTheme.colors.borderDim, thickness = 0.5.dp)
                     Spacer(Modifier.height(16.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
-                        Surface(shape = RoundedCornerShape(4.dp), color = AccentPrimary.copy(0.1f), modifier = Modifier.size(32.dp)) {
-                            Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.AutoAwesome, null, tint = AccentPrimary, modifier = Modifier.size(16.dp)) }
-                        }
-                        Column {
-                            Text("AI RECOMMENDATION", style = MaterialTheme.typography.labelLarge.copy(fontSize = 9.sp, letterSpacing = 2.sp), color = GramaTheme.colors.textTertiary)
-                            Spacer(Modifier.height(4.dp))
-                            Row {
-                                Text("[${state.aiResult?.category}]", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = AccentPrimary)
-                                Spacer(Modifier.width(8.dp))
-                                Text(state.aiResult?.instruction ?: "", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = GramaTheme.colors.textPrimary)
+                    Surface(
+                        color = AccentPrimary.copy(alpha = 0.05f),
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, AccentPrimary.copy(alpha = 0.1f))
+                    ) {
+                        Row(
+                            Modifier.padding(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Icon(Icons.Default.AutoAwesome, null, tint = AccentPrimary, modifier = Modifier.size(16.dp))
+                            Column {
+                                Text(
+                                    "AI RECOMMENDATION",
+                                    style = MaterialTheme.typography.labelLarge.copy(fontSize = 9.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold),
+                                    color = AccentPrimary
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Row {
+                                    Text("[${state.aiResult?.category}]", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = AccentPrimary)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(state.aiResult?.instruction ?: "", style = MaterialTheme.typography.bodySmall, color = GramaTheme.colors.textPrimary)
+                                }
                             }
                         }
                     }
@@ -102,33 +172,77 @@ fun EducationScreen(viewModel: EducationViewModel = viewModel()) {
             }
         }
 
-        // Category Cards
+        // Category Cards - Refined with Premium Borders and Glassmorphism
         GUIDELINES.forEach { guide ->
             val expanded = state.expandedCategory == guide.category
-            Surface(color = GramaTheme.colors.bgSecondary, border = BorderStroke(1.dp, if (expanded) AccentPrimary.copy(0.3f) else GramaTheme.colors.borderDim), shape = RoundedCornerShape(12.dp)) {
+            Surface(
+                color = if (isDark) GramaTheme.colors.bgSecondary.copy(alpha = 0.85f) else GramaTheme.colors.bgSecondary,
+                border = BorderStroke(
+                    1.dp,
+                    if (expanded) AccentPrimary.copy(0.4f)
+                    else if (isDark) Color.White.copy(alpha = 0.1f)
+                    else GramaTheme.colors.borderDim
+                ),
+                shape = RoundedCornerShape(12.dp),
+                shadowElevation = if (expanded && !isDark) 4.dp else 0.dp
+            ) {
                 Column {
-                    Row(Modifier.fillMaxWidth().clickable { viewModel.toggleCategory(guide.category) }.padding(20.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        Modifier.fillMaxWidth().clickable { viewModel.toggleCategory(guide.category) }.padding(20.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Surface(Modifier.size(48.dp), border = BorderStroke(1.dp, if (expanded) AccentPrimary else GramaTheme.colors.borderDim), color = GramaTheme.colors.bgPrimary, shape = RoundedCornerShape(4.dp)) {
-                                Box(contentAlignment = Alignment.Center) { Icon(guide.icon, null, tint = if (expanded) AccentPrimary else GramaTheme.colors.textTertiary, modifier = Modifier.size(24.dp)) }
+                            Surface(
+                                Modifier.size(48.dp),
+                                border = BorderStroke(1.dp, if (expanded) AccentPrimary else GramaTheme.colors.borderDim.copy(alpha = 0.5f)),
+                                color = GramaTheme.colors.bgPrimary.copy(alpha = 0.5f),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        guide.icon,
+                                        null,
+                                        tint = if (expanded) AccentPrimary else GramaTheme.colors.textTertiary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
                             }
                             Column {
-                                Text(guide.category.uppercase(), style = MaterialTheme.typography.titleMedium.copy(letterSpacing = 2.sp), color = GramaTheme.colors.textPrimary)
-                                Text(guide.description, style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.sp, fontFamily = FontFamily.Monospace), color = GramaTheme.colors.textTertiary, maxLines = 1)
+                                Text(
+                                    guide.category.uppercase(),
+                                    style = MaterialTheme.typography.titleMedium.copy(letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold),
+                                    color = if (expanded) AccentPrimary else GramaTheme.colors.textPrimary
+                                )
+                                Text(
+                                    guide.description,
+                                    style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.sp, fontFamily = FontFamily.Monospace),
+                                    color = GramaTheme.colors.textTertiary,
+                                    maxLines = 1
+                                )
                             }
                         }
-                        Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = GramaTheme.colors.textTertiary, modifier = Modifier.size(16.dp))
+                        Icon(
+                            if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            null,
+                            tint = GramaTheme.colors.textTertiary,
+                            modifier = Modifier.size(16.dp)
+                        )
                     }
-                    AnimatedVisibility(visible = expanded) {
+                    AnimatedVisibility(
+                        visible = expanded,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
                         Column(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 24.dp)) {
-                            HorizontalDivider(color = GramaTheme.colors.borderDim)
+                            HorizontalDivider(color = GramaTheme.colors.borderDim.copy(alpha = 0.5f))
                             Spacer(Modifier.height(16.dp))
                             guide.items.chunked(2).forEach { row ->
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                                     row.forEach { item ->
-                                        Row(Modifier.weight(1f).padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(Icons.Default.CheckCircle, null, tint = AccentTertiary, modifier = Modifier.size(12.dp))
-                                            Text(item.uppercase(), style = MaterialTheme.typography.labelLarge.copy(fontSize = 10.sp, letterSpacing = 0.sp), color = GramaTheme.colors.textSecondary)
+                                        Row(Modifier.weight(1f).padding(vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.CheckCircle, null, tint = AccentTertiary, modifier = Modifier.size(14.dp))
+                                            Text(item.uppercase(), style = MaterialTheme.typography.labelLarge.copy(fontSize = 10.sp, letterSpacing = 0.5.sp), color = GramaTheme.colors.textSecondary)
                                         }
                                     }
                                     if (row.size == 1) Spacer(Modifier.weight(1f))
@@ -140,18 +254,63 @@ fun EducationScreen(viewModel: EducationViewModel = viewModel()) {
             }
         }
 
-        // Rewards Card
-        Surface(color = GramaTheme.colors.bgTertiary, border = BorderStroke(1.dp, GramaTheme.colors.borderDim), shape = RoundedCornerShape(12.dp)) {
+        // Rewards Card - Enhanced with Glow and Gradient-ready progress
+        Surface(
+            color = if (isDark) GramaTheme.colors.bgTertiary.copy(alpha = 0.8f) else GramaTheme.colors.bgTertiary,
+            border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.1f) else GramaTheme.colors.borderDim),
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.then(
+                if (isDark) Modifier.shadow(
+                    elevation = 12.dp,
+                    spotColor = AccentPrimary.copy(alpha = 0.5f),
+                    ambientColor = AccentPrimary.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(12.dp)
+                ) else Modifier
+            )
+        ) {
             Column(Modifier.padding(24.dp)) {
-                Text("Incentive Tier 02", style = MaterialTheme.typography.headlineMedium.copy(fontFamily = SpaceGroteskFamily), color = GramaTheme.colors.textPrimary)
-                Spacer(Modifier.height(8.dp))
-                Text("MAINTAIN PROTOCOL COMPLIANCE TO AGGREGATE VILLAGE FAIR VALIDATION CREDITS.", style = MaterialTheme.typography.labelLarge.copy(fontSize = 10.sp, letterSpacing = 1.sp), color = GramaTheme.colors.textTertiary)
-                Spacer(Modifier.height(20.dp))
-                LinearProgressIndicator(progress = { 0.67f }, modifier = Modifier.fillMaxWidth().height(4.dp), color = AccentPrimary, trackColor = Color.White.copy(0.05f))
-                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Surface(
+                        shape = CircleShape,
+                        color = AccentPrimary.copy(alpha = 0.1f),
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.EmojiEvents, null, tint = AccentPrimary, modifier = Modifier.size(18.dp))
+                        }
+                    }
+                    Text(
+                        "Incentive Tier 02",
+                        style = MaterialTheme.typography.headlineSmall.copy(fontFamily = SpaceGroteskFamily, fontWeight = FontWeight.Bold),
+                        color = GramaTheme.colors.textPrimary
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    "MAINTAIN PROTOCOL COMPLIANCE TO AGGREGATE VILLAGE FAIR VALIDATION CREDITS.",
+                    style = MaterialTheme.typography.labelLarge.copy(fontSize = 10.sp, letterSpacing = 1.sp, lineHeight = 16.sp),
+                    color = GramaTheme.colors.textTertiary
+                )
+                Spacer(Modifier.height(24.dp))
+                
+                // Enhanced progress bar
+                Box(modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).background(if (isDark) Color.White.copy(0.05f) else Color.Black.copy(0.05f))) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.67f)
+                            .fillMaxHeight()
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(AccentPrimary, AccentTertiary)
+                                )
+                            )
+                    )
+                }
+                
+                Spacer(Modifier.height(12.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("PROGRESS", style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace), color = GramaTheme.colors.textTertiary)
-                    Text("450 / 600 UNIT", style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold), color = AccentPrimary)
+                    Text("COMPLIANCE PROGRESS", style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold), color = GramaTheme.colors.textTertiary)
+                    Text("450 / 600 UNIT", style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.ExtraBold), color = AccentPrimary)
                 }
             }
         }

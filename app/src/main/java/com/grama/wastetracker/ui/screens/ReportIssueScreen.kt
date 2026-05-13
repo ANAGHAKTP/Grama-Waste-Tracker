@@ -6,8 +6,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -41,6 +43,7 @@ fun ReportIssueScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
+    val isDark = isSystemInDarkTheme()
 
     // Camera launchers
     val cameraLauncher = rememberLauncherForActivityResult(
@@ -56,7 +59,7 @@ fun ReportIssueScreen(
         }
     }
 
-    // Gallery launcher (kept as fallback)
+    // Gallery launcher
     val galleryLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri -> uri?.let { viewModel.setImageUri(it, context) } }
@@ -113,13 +116,14 @@ fun ReportIssueScreen(
 
         HorizontalDivider(color = GramaTheme.colors.borderDim, thickness = 1.dp)
 
-        // Segmented toggle
+        // Segmented toggle - Refined for higher contrast in Dark Mode
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
-                .background(GramaTheme.colors.bgSecondary),
-            horizontalArrangement = Arrangement.spacedBy(0.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(GramaTheme.colors.bgSecondary)
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             ReportMode.entries.forEach { mode ->
                 val selected = state.reportMode == mode
@@ -128,17 +132,22 @@ fun ReportIssueScreen(
                     modifier = Modifier
                         .weight(1f)
                         .clickable { viewModel.setReportMode(mode) },
-                    color = if (selected) AccentPrimary else Color.Transparent,
-                    shape = RoundedCornerShape(10.dp)
+                    color = if (selected) {
+                        if (isDark) Color.White.copy(alpha = 0.9f) else AccentPrimary
+                    } else Color.Transparent,
+                    shape = RoundedCornerShape(8.dp),
+                    border = if (selected && isDark) null else BorderStroke(0.dp, Color.Transparent)
                 ) {
                     Text(
                         label,
                         modifier = Modifier.padding(vertical = 12.dp),
                         style = MaterialTheme.typography.labelMedium.copy(
-                            letterSpacing = 0.5.sp
+                            letterSpacing = 0.5.sp,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
                         ),
-                        color = if (selected) Color.White
-                                else GramaTheme.colors.textSecondary,
+                        color = if (selected) {
+                            if (isDark) Color.Black else Color.White
+                        } else GramaTheme.colors.textSecondary,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                 }
@@ -167,9 +176,14 @@ fun ReportIssueScreen(
             }
         }
 
-        // Form card
-        GeometricCard(modifier = Modifier.fillMaxWidth()) {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        // Form card - Updated with premium elevation and theme-aware borders
+        GeometricCard(
+            modifier = Modifier.fillMaxWidth(),
+            backgroundColor = if (isDark) GramaTheme.colors.bgSecondary.copy(alpha = 0.85f) else GramaTheme.colors.bgSecondary,
+            borderColor = if (isDark) Color.White.copy(alpha = 0.15f) else GramaTheme.colors.borderDim,
+            elevation = if (isDark) 0.dp else 4.dp
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
 
                 // Issue type — only shown in GENERAL mode
                 if (state.reportMode == ReportMode.GENERAL) {
@@ -191,7 +205,9 @@ fun ReportIssueScreen(
                             },
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = AccentPrimary,
-                                unfocusedBorderColor = GramaTheme.colors.borderDim
+                                unfocusedBorderColor = GramaTheme.colors.borderDim,
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent
                             ),
                             shape = RoundedCornerShape(8.dp),
                             modifier = Modifier.fillMaxWidth().menuAnchor()
@@ -257,76 +273,83 @@ fun ReportIssueScreen(
                     maxLines = 5,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = AccentPrimary,
-                        unfocusedBorderColor = GramaTheme.colors.borderDim
+                        unfocusedBorderColor = GramaTheme.colors.borderDim,
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent
                     ),
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                // Photo capture — Camera + Gallery buttons
+                // Photo capture
                 Text(
                     "EVIDENCE / PHOTO",
                     style = MaterialTheme.typography.labelLarge
-                        .copy(fontSize = 9.sp, letterSpacing = 2.sp),
+                        .copy(fontSize = 9.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold),
                     color = GramaTheme.colors.textTertiary
                 )
 
-                if (state.imageUri != null) {
-                    Box {
+                if (state.imageUri != null && state.imageUri != Uri.EMPTY) {
+                    Box(modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(GramaTheme.colors.bgPrimary)) {
                         AsyncImage(
                             model = state.imageUri,
                             contentDescription = "Evidence photo",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(180.dp)
-                                .clip(RoundedCornerShape(8.dp))
+                                .height(200.dp)
                         )
-                        // Re-take button overlay
                         IconButton(
                             onClick = { viewModel.setImageUri(Uri.EMPTY, context) },
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .padding(4.dp)
+                                .padding(8.dp)
                                 .background(
                                     Color.Black.copy(alpha = 0.5f),
-                                    RoundedCornerShape(50)
+                                    CircleShape
                                 )
+                                .size(32.dp)
                         ) {
                             Icon(Icons.Default.Close, null,
                                  tint = Color.White, modifier = Modifier.size(16.dp))
                         }
                     }
                 } else {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         OutlinedButton(
                             onClick = {
                                 permissionLauncher.launch(
                                     android.Manifest.permission.CAMERA
                                 )
                             },
-                            modifier = Modifier.weight(1f).height(52.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            border = BorderStroke(1.dp, GramaTheme.colors.borderDim)
+                            modifier = Modifier.weight(1f).height(56.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.1f) else GramaTheme.colors.borderDim),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = GramaTheme.colors.bgPrimary.copy(alpha = 0.5f)
+                            )
                         ) {
                             Icon(Icons.Default.CameraAlt, null,
-                                 modifier = Modifier.size(18.dp),
+                                 modifier = Modifier.size(20.dp),
                                  tint = AccentPrimary)
-                            Spacer(Modifier.width(6.dp))
+                            Spacer(Modifier.width(8.dp))
                             Text("Camera",
                                  style = MaterialTheme.typography.labelMedium,
                                  color = GramaTheme.colors.textPrimary)
                         }
                         OutlinedButton(
                             onClick = { galleryLauncher.launch("image/*") },
-                            modifier = Modifier.weight(1f).height(52.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            border = BorderStroke(1.dp, GramaTheme.colors.borderDim)
+                            modifier = Modifier.weight(1f).height(56.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.1f) else GramaTheme.colors.borderDim),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = GramaTheme.colors.bgPrimary.copy(alpha = 0.5f)
+                            )
                         ) {
                             Icon(Icons.Default.Photo, null,
-                                 modifier = Modifier.size(18.dp),
+                                 modifier = Modifier.size(20.dp),
                                  tint = GramaTheme.colors.textSecondary)
-                            Spacer(Modifier.width(6.dp))
+                            Spacer(Modifier.width(8.dp))
                             Text("Gallery",
                                  style = MaterialTheme.typography.labelMedium,
                                  color = GramaTheme.colors.textPrimary)
@@ -338,7 +361,8 @@ fun ReportIssueScreen(
                 if (state.aiAnalysisText != null) {
                     Surface(
                         color = AccentPrimary.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, AccentPrimary.copy(alpha = 0.2f))
                     ) {
                         Row(
                             Modifier.padding(12.dp),
@@ -354,13 +378,16 @@ fun ReportIssueScreen(
                     }
                 }
 
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(4.dp))
 
                 // Submit
                 Button(
                     onClick = { viewModel.submitReport(selectedIssueType) },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AccentPrimary,
+                        disabledContainerColor = GramaTheme.colors.bgTertiary
+                    ),
                     shape = RoundedCornerShape(12.dp),
                     enabled = !state.submitting && state.imageUri != null
                               && state.imageUri != Uri.EMPTY
@@ -379,7 +406,7 @@ fun ReportIssueScreen(
                                 "SUBMIT OFFENDER REPORT"
                             else "SUBMIT REPORT",
                             style = MaterialTheme.typography.labelLarge
-                                .copy(letterSpacing = 2.sp)
+                                .copy(letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
                         )
                     }
                 }

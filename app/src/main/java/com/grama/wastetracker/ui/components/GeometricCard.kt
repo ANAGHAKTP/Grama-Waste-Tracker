@@ -1,6 +1,7 @@
 package com.grama.wastetracker.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.padding
@@ -15,7 +16,7 @@ import com.grama.wastetracker.ui.theme.GramaTheme
 
 /**
  * Reusable card component matching the web app's .geometric-card CSS class.
- * Rounded 12dp corners, surface background, dim border.
+ * Updated with Glassmorphism support for Dark Mode.
  */
 @Composable
 fun GeometricCard(
@@ -26,11 +27,27 @@ fun GeometricCard(
     contentPadding: Dp = 16.dp,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val isDark = isSystemInDarkTheme()
+    
+    // Glassmorphism logic: 0.85 alpha in dark mode, solid in light mode
+    val finalBgColor = backgroundColor ?: if (isDark) {
+        GramaTheme.colors.bgSecondary.copy(alpha = 0.85f)
+    } else {
+        GramaTheme.colors.bgSecondary
+    }
+    
+    // White-glow borders in dark mode
+    val finalBorderColor = borderColor ?: if (isDark) {
+        Color.White.copy(alpha = 0.12f)
+    } else {
+        GramaTheme.colors.borderDim
+    }
+
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        color = backgroundColor ?: GramaTheme.colors.bgSecondary,
-        border = BorderStroke(1.dp, borderColor ?: GramaTheme.colors.borderDim),
+        color = finalBgColor,
+        border = BorderStroke(1.dp, finalBorderColor),
         shadowElevation = elevation,
         tonalElevation = 0.dp,
     ) {
