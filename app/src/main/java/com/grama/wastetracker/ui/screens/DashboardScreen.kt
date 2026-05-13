@@ -182,8 +182,7 @@ fun DashboardScreen(
             enter = fadeIn() + slideInHorizontally { -it }
         ) {
             GeometricCard(
-                backgroundColor = if (isDark) GramaTheme.colors.bgSecondary.copy(alpha = 0.85f) else GramaTheme.colors.bgSecondary,
-                borderColor = if (isDark) Color.White.copy(alpha = 0.15f) else AccentPrimary.copy(alpha = 0.2f),
+                borderColor = AccentPrimary.copy(alpha = 0.2f),
                 elevation = if (isDark) 0.dp else 4.dp
             ) {
                 Row(
@@ -228,12 +227,8 @@ fun DashboardScreen(
         // ── Vehicle ETA Card ──
         Surface(
             shape = RoundedCornerShape(12.dp),
-            color = if (dashState.activeVehicle != null) AccentPrimary 
-                    else if (isDark) GramaTheme.colors.bgSecondary.copy(alpha = 0.85f) 
-                    else GramaTheme.colors.bgSecondary,
-            border = BorderStroke(1.dp, if (dashState.activeVehicle != null) Color.White.copy(alpha = 0.2f) 
-                    else if (isDark) Color.White.copy(alpha = 0.1f) 
-                    else GramaTheme.colors.borderDim),
+            color = if (dashState.activeVehicle != null) AccentPrimary else GramaTheme.colors.bgSecondary,
+            border = BorderStroke(1.dp, if (dashState.activeVehicle != null) Color.White.copy(alpha = 0.2f) else GramaTheme.colors.borderDim),
             shadowElevation = if (dashState.activeVehicle != null) 12.dp else 0.dp,
             modifier = Modifier.fillMaxWidth().then(
                 if (dashState.activeVehicle != null) Modifier.shadow(

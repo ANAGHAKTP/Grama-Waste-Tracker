@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -80,9 +81,8 @@ fun EducationScreen(viewModel: EducationViewModel = viewModel()) {
         // AI Search - Refined aesthetic
         SectionHeader(title = "Neural Assistant")
         GeometricCard(
-            backgroundColor = if (isDark) GramaTheme.colors.bgSecondary.copy(alpha = 0.85f) else GramaTheme.colors.bgSecondary,
             elevation = if (isDark) 0.dp else 2.dp,
-            borderColor = if (isDark) Color.White.copy(alpha = 0.15f) else GramaTheme.colors.borderDim
+            borderColor = if (isDark) Color.White.copy(alpha = 0.1f) else null
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),

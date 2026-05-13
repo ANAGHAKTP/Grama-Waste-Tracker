@@ -179,8 +179,6 @@ fun ReportIssueScreen(
         // Form card - Updated with premium elevation and theme-aware borders
         GeometricCard(
             modifier = Modifier.fillMaxWidth(),
-            backgroundColor = if (isDark) GramaTheme.colors.bgSecondary.copy(alpha = 0.85f) else GramaTheme.colors.bgSecondary,
-            borderColor = if (isDark) Color.White.copy(alpha = 0.15f) else GramaTheme.colors.borderDim,
             elevation = if (isDark) 0.dp else 4.dp
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {

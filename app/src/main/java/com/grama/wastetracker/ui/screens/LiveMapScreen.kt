@@ -53,7 +53,7 @@ fun LiveMapScreen(
 ) {
     val state by mapViewModel.state.collectAsState()
     val context = LocalContext.current
-    val isDark = ThemeState.isDarkTheme
+    val isDark = isSystemInDarkTheme()
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     
     var followVehicle by remember { mutableStateOf(true) }
@@ -124,10 +124,11 @@ fun LiveMapScreen(
         label = "rotation"
     )
 
-    val mapStyle = remember(isDark) {
+    // Force dark map style for "Live Map" screen as requested
+    val mapStyle = remember {
         MapStyleOptions.loadRawResourceStyle(
             context,
-            if (isDark) R.raw.map_style_dark else R.raw.map_style_light
+            R.raw.map_style_dark
         )
     }
 
@@ -157,10 +158,9 @@ fun LiveMapScreen(
             if (state.routePoints.isNotEmpty()) {
                 Polyline(
                     points = state.routePoints,
-                    color = (if (isDark) AccentSecondary else AccentPrimary).copy(alpha = 0.6f),
+                    color = AccentTertiary.copy(alpha = 0.8f),
                     width = 10f,
-                    jointType = com.google.android.gms.maps.model.JointType.ROUND,
-                    pattern = listOf(com.google.android.gms.maps.model.Dot(), com.google.android.gms.maps.model.Gap(10f))
+                    jointType = com.google.android.gms.maps.model.JointType.ROUND
                 )
             }
 
@@ -177,24 +177,11 @@ fun LiveMapScreen(
             val uLat = state.userLat
             val uLng = state.userLng
             if (uLat != null && uLng != null) {
-                MarkerComposable(
+                Marker(
                     state = rememberMarkerState(position = LatLng(uLat, uLng)),
                     title = "Destination",
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Surface(
-                            modifier = Modifier.size(42.dp),
-                            color = AccentSecondary.copy(alpha = 0.2f),
-                            shape = CircleShape
-                        ) {}
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = null,
-                            tint = AccentSecondary,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                }
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+                )
             }
 
             MarkerComposable(
@@ -203,18 +190,18 @@ fun LiveMapScreen(
                 title = if (state.isArrived) "Arrived" else "Unit GA-01-1234",
             ) {
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
+                    shape = CircleShape,
                     color = if (state.isArrived) AccentTertiary else AccentPrimary,
                     border = BorderStroke(2.dp, Color.White),
                     shadowElevation = 8.dp,
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(28.dp)
                 ) {
                     Icon(
-                        imageVector = if (state.isArrived) Icons.Default.Check else Icons.Default.LocalShipping,
+                        imageVector = if (state.isArrived) Icons.Default.Check else Icons.Default.Navigation,
                         contentDescription = null,
                         tint = Color.White,
                         modifier = Modifier
-                            .padding(6.dp)
+                            .padding(4.dp)
                             .rotate(if (state.isArrived) 0f else animatedRotation)
                     )
                 }
@@ -241,9 +228,8 @@ fun LiveMapScreen(
                 .padding(top = 48.dp, start = 16.dp, end = 16.dp)
         ) {
             GeometricCard(
-                elevation = 12.dp,
-                backgroundColor = if (isDark) GramaTheme.colors.bgSecondary.copy(alpha = 0.85f) else Color.White,
-                borderColor = if (isDark) Color.White.copy(alpha = 0.1f) else GramaTheme.colors.borderDim,
+                elevation = 8.dp,
+                backgroundColor = if (isDark) GramaTheme.colors.bgSecondary else Color.White,
                 contentPadding = 16.dp,
                 modifier = Modifier.fillMaxWidth(0.9f)
             ) {
