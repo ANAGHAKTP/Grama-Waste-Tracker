@@ -124,11 +124,10 @@ fun LiveMapScreen(
         label = "rotation"
     )
 
-    // Force dark map style for "Live Map" screen as requested
-    val mapStyle = remember {
+    val mapStyle = remember(isDark) {
         MapStyleOptions.loadRawResourceStyle(
             context,
-            R.raw.map_style_dark
+            if (isDark) R.raw.map_style_dark else R.raw.map_style_light
         )
     }
 
@@ -158,8 +157,8 @@ fun LiveMapScreen(
             if (state.routePoints.isNotEmpty()) {
                 Polyline(
                     points = state.routePoints,
-                    color = AccentTertiary.copy(alpha = 0.8f),
-                    width = 10f,
+                    color = AccentPrimary.copy(alpha = 0.4f),
+                    width = 8f,
                     jointType = com.google.android.gms.maps.model.JointType.ROUND
                 )
             }
