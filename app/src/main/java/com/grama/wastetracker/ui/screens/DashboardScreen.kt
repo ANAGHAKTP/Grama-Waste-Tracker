@@ -155,7 +155,6 @@ fun DashboardScreen(
                     modifier = Modifier
                         .size(44.dp)
                         .clickable {
-                            authViewModel.signOut()
                             onSignOut()
                         },
                     shape = RoundedCornerShape(12.dp),
