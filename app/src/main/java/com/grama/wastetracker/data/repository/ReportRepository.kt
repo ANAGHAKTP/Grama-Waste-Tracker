@@ -26,6 +26,7 @@ class ReportRepository(
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
+                    // Close the flow gracefully on error (e.g., permission denied during sign-out)
                     close(error)
                     return@addSnapshotListener
                 }
