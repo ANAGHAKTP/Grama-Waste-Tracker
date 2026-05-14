@@ -42,10 +42,24 @@ fun AppNavigation() {
     val isAdmin = profile?.userRole == UserRole.ADMIN
     val showBottomBar = isLoggedIn && currentRoute != "login" && currentRoute != "register"
 
+    // Use a stable start destination to avoid NavHost recreation on state change
+    val startDestination = remember { if (isLoggedIn) "dashboard" else "login" }
+
+    // Redirect to login if user signs out
+    LaunchedEffect(isLoggedIn) {
+        if (!isLoggedIn && currentRoute != "login" && currentRoute != "register" && currentRoute != null) {
+            navController.navigate("login") {
+                popUpTo(navController.graph.id) {
+                    inclusive = true
+                }
+            }
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         NavHost(
             navController = navController,
-            startDestination = if (isLoggedIn) "dashboard" else "login"
+            startDestination = startDestination
         ) {
             composable("login") {
                 LoginScreen(
@@ -80,11 +94,6 @@ fun AppNavigation() {
                     onNavigate = { route -> navController.navigate(route) },
                     onSignOut = {
                         authViewModel.signOut()
-                        navController.navigate("login") {
-                            popUpTo(navController.graph.id) {
-                                inclusive = true
-                            }
-                        }
                     }
                 )
             }
