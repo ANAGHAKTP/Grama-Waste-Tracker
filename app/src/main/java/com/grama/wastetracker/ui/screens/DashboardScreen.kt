@@ -80,7 +80,6 @@ fun DashboardScreen(
             verticalAlignment = Alignment.Top
         ) {
             Column {
-                // Refined Logo Container - using theme-aware color
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = GramaTheme.colors.bgSecondary,
@@ -131,44 +130,36 @@ fun DashboardScreen(
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 // Theme toggle
-                Surface(
+                IconButton(
+                    onClick = { ThemeState.toggle() },
                     modifier = Modifier
                         .size(44.dp)
-                        .clickable { ThemeState.toggle() },
-                    shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, GramaTheme.colors.borderDim),
-                    color = GramaTheme.colors.bgSecondary
+                        .background(GramaTheme.colors.bgSecondary, RoundedCornerShape(12.dp))
+                        .border(1.dp, GramaTheme.colors.borderDim, RoundedCornerShape(12.dp))
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = if (ThemeState.isDarkTheme) Icons.Default.LightMode
-                            else Icons.Default.DarkMode,
-                            contentDescription = "Toggle theme",
-                            tint = if (isDark) AccentSecondary else GramaTheme.colors.textTertiary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
+                    Icon(
+                        imageVector = if (ThemeState.isDarkTheme) Icons.Default.LightMode
+                        else Icons.Default.DarkMode,
+                        contentDescription = "Toggle theme",
+                        tint = if (isDark) AccentSecondary else GramaTheme.colors.textTertiary,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
 
                 // Sign out
-                Surface(
+                IconButton(
+                    onClick = { onSignOut() },
                     modifier = Modifier
                         .size(44.dp)
-                        .clickable {
-                            onSignOut()
-                        },
-                    shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, GramaTheme.colors.borderDim),
-                    color = GramaTheme.colors.bgSecondary
+                        .background(GramaTheme.colors.bgSecondary, RoundedCornerShape(12.dp))
+                        .border(1.dp, GramaTheme.colors.borderDim, RoundedCornerShape(12.dp))
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Logout,
-                            contentDescription = "Sign out",
-                            tint = GramaTheme.colors.textTertiary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Logout,
+                        contentDescription = "Sign out",
+                        tint = GramaTheme.colors.textTertiary,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         }
@@ -245,7 +236,6 @@ fun DashboardScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        // IN TRANSIT badge with subtle glow
                         Surface(
                             shape = RoundedCornerShape(50),
                             color = (if (dashState.activeVehicle != null) Color.White else GramaTheme.colors.textTertiary).copy(alpha = 0.15f),
@@ -314,7 +304,6 @@ fun DashboardScreen(
         // ── Quick Actions Grid ──
         SectionHeader(title = "Services")
 
-        // 2x2 grid with softened borders
         Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
             for (rowIndex in 0..1) {
                 Row(
