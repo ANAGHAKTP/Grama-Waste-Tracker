@@ -72,7 +72,55 @@ class ReportRepository(
 
     fun getCurrentUserId(): String = auth.currentUser?.uid ?: "anonymous"
 
+    fun observeUserReports(uid: String): Flow<List<IncidentReport>> = callbackFlow {
+        val listener = db.collection("reports")
+            .whereEqualTo("reporterUid", uid)
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                val reports = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(IncidentReport::class.java)?.copy(reportId = doc.id)
+                } ?: emptyList()
+                trySend(reports)
+            }
+        awaitClose { listener.remove() }
+    }
+
     suspend fun resolveReport(reportId: String) {
         db.collection("reports").document(reportId).update("status", "RESOLVED").await()
+    }
+
+    /**
+     * Seeds the database with initial mock reports for demonstration.
+     */
+    suspend fun seedMockReports() {
+        val reports = listOf(
+            hashMapOf(
+                "reporterUid" to "seed_user_1",
+                "description" to "Illegal garbage dumping near the main market entrance. Requires immediate attention.",
+                "aiAnalysis" to "Type: Mixed Waste | Action: Cleanup Required | Priority: HIGH",
+                "status" to "PENDING",
+                "type" to "offender",
+                "issueType" to "Illegal Dumping",
+                "timestamp" to Instant.now().minusSeconds(3600 * 2).toString()
+            ),
+            hashMapOf(
+                "reporterUid" to "seed_user_2",
+                "description" to "The bin at the park corner is overflowing for two days.",
+                "aiAnalysis" to "Type: Organic/Plastic | Action: Bin Emptying | Priority: MEDIUM",
+                "status" to "RESOLVED",
+                "type" to "general",
+                "issueType" to "Overflowing Bin",
+                "timestamp" to Instant.now().minusSeconds(3600 * 24).toString()
+            )
+        )
+
+        val reportsCol = db.collection("reports")
+        reports.forEach { report ->
+            reportsCol.add(report).await()
+        }
     }
 }

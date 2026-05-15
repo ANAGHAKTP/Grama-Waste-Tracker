@@ -116,6 +116,12 @@ fun AppNavigation() {
                 EducationScreen()
             }
 
+            composable("my_reports") {
+                MyReportsScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
             composable("admin") {
                 // Guard: only admins
                 if (isAdmin) {

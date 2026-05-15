@@ -104,6 +104,16 @@ class AdminViewModel(
     }
 
     fun seedData() {
-        refresh()
+        viewModelScope.launch {
+            _state.update { it.copy(summarizing = true, error = "Seeding data...") }
+            try {
+                logisticsRepo.seedMockData()
+                reportRepo.seedMockReports()
+                _state.update { it.copy(summarizing = false, error = "Seed Successful!") }
+                refresh()
+            } catch (e: Exception) {
+                _state.update { it.copy(summarizing = false, error = "Seed Failed: ${e.message}") }
+            }
+        }
     }
 }

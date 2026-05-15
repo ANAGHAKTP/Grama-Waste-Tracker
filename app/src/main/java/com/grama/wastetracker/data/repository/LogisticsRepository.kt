@@ -54,4 +54,33 @@ class LogisticsRepository(
             )
         ).await()
     }
+
+    /**
+     * Seeds the database with initial mock data for demonstration.
+     */
+    suspend fun seedMockData() {
+        // 1. Seed Schedules
+        val schedules = listOf(
+            mapOf("day" to "MON", "wasteType" to "Dry Waste", "time" to "08:00", "status" to "upcoming"),
+            mapOf("day" to "WED", "wasteType" to "Wet Waste", "time" to "07:30", "status" to "planned"),
+            mapOf("day" to "FRI", "wasteType" to "Recyclables", "time" to "09:00", "status" to "planned")
+        )
+        
+        val schedulesCol = db.collection("schedules")
+        schedules.forEach { schedule ->
+            schedulesCol.add(schedule).await()
+        }
+
+        // 2. Seed a Vehicle
+        val vehicle = hashMapOf(
+            "id" to "v_ga_01_1234",
+            "vehicleNumber" to "GA-01-1234",
+            "status" to "active",
+            "location" to hashMapOf("lat" to 12.9716, "lng" to 77.5946),
+            "sector" to "Market Road • Sector 04",
+            "etaMinutes" to 12,
+            "lastUpdate" to Instant.now().toString()
+        )
+        db.collection("vehicles").document("v_ga_01_1234").set(vehicle).await()
+    }
 }

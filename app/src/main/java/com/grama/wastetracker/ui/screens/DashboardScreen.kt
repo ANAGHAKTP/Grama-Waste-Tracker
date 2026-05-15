@@ -61,7 +61,7 @@ fun DashboardScreen(
         QuickAction("map", "Live Tracking", Icons.Default.LocationOn, AccentPrimary),
         QuickAction("report", "Report Issue", Icons.Default.ErrorOutline, AccentError),
         QuickAction("education", "Waste Guide", Icons.Default.Info, AccentSecondary),
-        QuickAction("dashboard", "My Reports", Icons.Default.GridView, GramaTheme.colors.textTertiary),
+        QuickAction("my_reports", "My Reports", Icons.Default.GridView, GramaTheme.colors.textTertiary),
     )
 
     Column(
