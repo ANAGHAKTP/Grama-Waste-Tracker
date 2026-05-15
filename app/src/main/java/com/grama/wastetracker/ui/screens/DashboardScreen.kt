@@ -131,14 +131,12 @@ fun DashboardScreen(
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 // Theme toggle
-                Box(
+                IconButton(
+                    onClick = { ThemeState.toggle() },
                     modifier = Modifier
                         .size(44.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(GramaTheme.colors.bgSecondary)
+                        .background(GramaTheme.colors.bgSecondary, RoundedCornerShape(12.dp))
                         .border(1.dp, GramaTheme.colors.borderDim, RoundedCornerShape(12.dp))
-                        .clickable { ThemeState.toggle() },
-                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = if (ThemeState.isDarkTheme) Icons.Default.LightMode
@@ -150,14 +148,12 @@ fun DashboardScreen(
                 }
 
                 // Sign out
-                Box(
+                IconButton(
+                    onClick = { onSignOut() },
                     modifier = Modifier
                         .size(44.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(GramaTheme.colors.bgSecondary)
+                        .background(GramaTheme.colors.bgSecondary, RoundedCornerShape(12.dp))
                         .border(1.dp, GramaTheme.colors.borderDim, RoundedCornerShape(12.dp))
-                        .clickable { onSignOut() },
-                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Logout,
