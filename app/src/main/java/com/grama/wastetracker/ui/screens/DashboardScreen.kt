@@ -6,6 +6,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -61,7 +62,7 @@ fun DashboardScreen(
         QuickAction("map", "Live Tracking", Icons.Default.LocationOn, AccentPrimary),
         QuickAction("report", "Report Issue", Icons.Default.ErrorOutline, AccentError),
         QuickAction("education", "Waste Guide", Icons.Default.Info, AccentSecondary),
-        QuickAction("my_reports", "My Reports", Icons.Default.GridView, GramaTheme.colors.textTertiary),
+        QuickAction("dashboard", "My Reports", Icons.Default.GridView, GramaTheme.colors.textTertiary),
     )
 
     Column(
@@ -130,12 +131,14 @@ fun DashboardScreen(
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 // Theme toggle
-                IconButton(
-                    onClick = { ThemeState.toggle() },
+                Box(
                     modifier = Modifier
                         .size(44.dp)
-                        .background(GramaTheme.colors.bgSecondary, RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(GramaTheme.colors.bgSecondary)
                         .border(1.dp, GramaTheme.colors.borderDim, RoundedCornerShape(12.dp))
+                        .clickable { ThemeState.toggle() },
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = if (ThemeState.isDarkTheme) Icons.Default.LightMode
@@ -147,12 +150,14 @@ fun DashboardScreen(
                 }
 
                 // Sign out
-                IconButton(
-                    onClick = { onSignOut() },
+                Box(
                     modifier = Modifier
                         .size(44.dp)
-                        .background(GramaTheme.colors.bgSecondary, RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(GramaTheme.colors.bgSecondary)
                         .border(1.dp, GramaTheme.colors.borderDim, RoundedCornerShape(12.dp))
+                        .clickable { onSignOut() },
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Logout,
